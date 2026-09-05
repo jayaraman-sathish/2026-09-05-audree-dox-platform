@@ -1,0 +1,1162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Audree — AI Business Document Platform</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<style>
+:root{
+  --ink:#0F1B2D;--ink-2:#1A2A42;--paper:#F5F7F9;--card:#FFF;--line:#DCE3EA;
+  --text:#22303F;--muted:#66788A;
+  --teal:#0E7C66;--teal-bg:#E4F3EF;--amber:#B4720F;--amber-bg:#FBF1DE;
+  --red:#B3382C;--red-bg:#F9E9E7;--blue:#2456C4;--blue-bg:#E8EEFB;
+  --violet:#6A45B8;--violet-bg:#EFE9FA;--radius:10px;--mono:'IBM Plex Mono',monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',system-ui,sans-serif;background:var(--paper);color:var(--text);font-size:13.5px;line-height:1.5}
+h1,h2,h3,.brand{font-family:'Sora',sans-serif}
+button{font:inherit;cursor:pointer;border:none;background:none}
+.app{display:flex;height:100vh;overflow:hidden}
+.sidebar{width:230px;min-width:230px;background:var(--ink);color:#C6D2E0;display:flex;flex-direction:column}
+.brand{padding:20px 18px 14px;color:#fff;font-size:19px;font-weight:700;display:flex;align-items:center;gap:9px}
+.brand .dot{width:10px;height:10px;border-radius:3px;background:linear-gradient(135deg,#3D7BFF,#0E7C66)}
+.brand small{font-family:'Inter';font-size:10px;font-weight:500;color:#7E93AC;display:block;letter-spacing:1.4px;text-transform:uppercase}
+.nav{padding:8px 10px;flex:1;overflow:auto}
+.nav .group{font-size:10px;letter-spacing:1.3px;text-transform:uppercase;color:#5F7490;margin:16px 10px 6px}
+.nav button{display:flex;align-items:center;gap:10px;width:100%;padding:9px 12px;border-radius:8px;color:#C6D2E0;font-size:13px;text-align:left;margin-bottom:2px}
+.nav button:hover{background:var(--ink-2)}
+.nav button.active{background:var(--ink-2);color:#fff;font-weight:600;box-shadow:inset 3px 0 0 var(--teal)}
+.nav .badge{margin-left:auto;background:var(--amber);color:#fff;font-size:10.5px;font-weight:600;border-radius:9px;padding:1px 7px}
+.user{padding:14px 18px;border-top:1px solid #24344D;font-size:12px}
+.user b{color:#fff;display:block}
+.main{flex:1;overflow:auto;display:flex;flex-direction:column}
+.topbar{background:var(--card);border-bottom:1px solid var(--line);padding:12px 24px;display:flex;align-items:center;gap:14px;position:sticky;top:0;z-index:20;flex-wrap:wrap}
+.topbar h1{font-size:16.5px;color:var(--ink)}
+.topbar .sub{color:var(--muted);font-size:12px}
+.content{padding:20px 24px 40px;max-width:1440px;width:100%}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius)}
+.chip{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:600;padding:2.5px 9px;border-radius:20px;white-space:nowrap}
+.chip.teal{background:var(--teal-bg);color:var(--teal)}.chip.amber{background:var(--amber-bg);color:var(--amber)}
+.chip.red{background:var(--red-bg);color:var(--red)}.chip.blue{background:var(--blue-bg);color:var(--blue)}
+.chip.violet{background:var(--violet-bg);color:var(--violet)}.chip.grey{background:#EDF1F5;color:var(--muted)}
+.btn{padding:8px 15px;border-radius:8px;font-weight:600;font-size:13px;border:1px solid var(--line);background:#fff;color:var(--text)}
+.btn:hover{border-color:#B9C4CF}
+.btn.primary{background:var(--teal);border-color:var(--teal);color:#fff}.btn.primary:hover{background:#0A6853}
+.btn.danger{background:#fff;border-color:var(--red);color:var(--red)}.btn.danger:hover{background:var(--red-bg)}
+.btn.blue{background:var(--blue);border-color:var(--blue);color:#fff}
+.btn.ghost{border-color:transparent;color:var(--blue)}
+.btn.sm{padding:4px 10px;font-size:12px}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+table{width:100%;border-collapse:collapse}
+th{font-size:10.5px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);text-align:left;padding:10px 14px;border-bottom:1px solid var(--line);background:#FAFBFC}
+td{padding:10px 14px;border-bottom:1px solid #EDF1F5;vertical-align:middle}
+tr.row:hover td{background:#F6F9FC;cursor:pointer}
+.mono{font-family:var(--mono);font-size:12px}
+.stat{padding:16px 18px}
+.stat .n{font-family:'Sora';font-size:26px;font-weight:700;color:var(--ink)}
+.stat .l{font-size:11.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;margin-top:2px}
+.grid{display:grid;gap:14px}
+.section-title{font-size:11px;letter-spacing:1.2px;text-transform:uppercase;color:var(--muted);font-weight:600;margin-bottom:10px}
+input,select,textarea{font:inherit;padding:8px 10px;border:1px solid var(--line);border-radius:8px;width:100%;background:#fff;color:var(--text)}
+input:focus,select:focus{outline:2px solid var(--blue-bg);border-color:var(--blue)}
+label{font-size:11.5px;font-weight:600;color:var(--muted);display:block;margin-bottom:4px}
+.filterbar{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px;align-items:flex-end}
+.filterbar>div{min-width:160px}
+.conf{display:inline-flex;align-items:center;gap:7px;font-family:var(--mono);font-size:11.5px;font-weight:500}
+.conf .bar{width:44px;height:5px;background:#E6EBF0;border-radius:3px;overflow:hidden}
+.conf .bar i{display:block;height:100%;border-radius:3px}
+.conf.hi{color:var(--teal)}.conf.hi .bar i{background:var(--teal)}
+.conf.md{color:var(--amber)}.conf.md .bar i{background:var(--amber)}
+.conf.lo{color:var(--red)}.conf.lo .bar i{background:var(--red)}
+.pipe{display:flex;align-items:center;overflow-x:auto;padding:14px 18px}
+.pipe .st{display:flex;align-items:center;gap:8px;font-size:11.5px;font-weight:600;color:var(--muted);white-space:nowrap}
+.pipe .st .ic{width:22px;height:22px;border-radius:50%;background:#E9EEF3;color:var(--muted);display:flex;align-items:center;justify-content:center;font-size:11px;font-family:var(--mono)}
+.pipe .st.done{color:var(--teal)}.pipe .st.done .ic{background:var(--teal);color:#fff}
+.pipe .st.now{color:var(--ink)}.pipe .st.now .ic{background:var(--blue);color:#fff;box-shadow:0 0 0 4px var(--blue-bg)}
+.pipe .ln{width:30px;height:2px;background:var(--line);margin:0 8px;flex:none}
+.pipe .ln.done{background:var(--teal)}
+.detail{display:grid;grid-template-columns:minmax(340px,1.05fr) minmax(400px,1.3fr);gap:16px;align-items:start}
+/* --- original document renderings --- */
+.viewtabs{display:flex;gap:6px;margin-bottom:8px}
+.viewtabs button{padding:5px 12px;border-radius:7px;font-size:12px;font-weight:600;color:var(--muted);border:1px solid var(--line);background:#fff}
+.viewtabs button.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+.pdfframe{border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;background:#525659}
+.pdfbar{background:#3C4043;color:#E8EAED;font-size:11.5px;padding:7px 12px;display:flex;justify-content:space-between;font-family:var(--mono)}
+.pdfpage{background:#fff;margin:16px auto;width:88%;min-height:340px;box-shadow:0 4px 14px rgba(0,0,0,.45);padding:22px 24px;font-size:12px}
+.photowrap{border:1px solid var(--line);border-radius:var(--radius);background:radial-gradient(circle at 30% 20%,#8A7A66,#5C5044);padding:26px;display:flex;justify-content:center}
+.photo{background:#FDFDF8;width:86%;padding:16px 18px;transform:rotate(-2.2deg);box-shadow:0 10px 22px rgba(0,0,0,.5),0 0 0 1px rgba(0,0,0,.08);font-size:12px}
+.photo.card-doc{width:66%;border-radius:10px;background:linear-gradient(135deg,#EAF2FB,#FDFDF8 55%)}
+.photo .flash{position:relative}
+.hl{background:#FFF3CE;border-bottom:1.5px dashed var(--amber);padding:0 2px;border-radius:2px}
+.dochead{display:flex;justify-content:space-between;border-bottom:2px solid var(--ink);padding-bottom:8px;margin-bottom:10px}
+/* --- WhatsApp panel --- */
+.wa{border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;display:flex;flex-direction:column}
+.wa .wahead{background:#075E54;color:#fff;padding:9px 14px;font-size:12.5px;display:flex;align-items:center;gap:9px}
+.wa .wahead .av{width:26px;height:26px;border-radius:50%;background:#128C7E;display:flex;align-items:center;justify-content:center;font-weight:700}
+.wa .wabody{background:#E5DDD5;padding:12px;max-height:280px;overflow:auto}
+.wamsg{max-width:82%;background:#fff;border-radius:8px;padding:7px 10px;margin-bottom:7px;font-size:12.5px;box-shadow:0 1px 1px rgba(0,0,0,.12)}
+.wamsg.me{margin-left:auto;background:#DCF8C6}
+.wamsg .who{font-size:10.5px;color:#128C7E;font-weight:700;margin-bottom:1px}
+.wamsg .tm{font-size:9.5px;color:#8696A0;text-align:right;margin-top:2px}
+.wamsg .att{display:flex;align-items:center;gap:8px;background:rgba(0,0,0,.05);border-radius:6px;padding:7px 9px;margin:3px 0;font-size:12px;cursor:pointer}
+.wamsg .att .fic{font-size:19px}
+.wafoot{display:flex;gap:8px;padding:9px;background:#F0F2F5}
+.wafoot input{border-radius:20px;padding:8px 14px}
+.wafoot button{background:#075E54;color:#fff;width:38px;height:38px;border-radius:50%;flex:none;font-size:15px}
+.emailthread{padding:12px 14px;font-size:12.5px}
+.fieldrow{display:grid;grid-template-columns:1.1fr 1.4fr auto;gap:10px;align-items:center;padding:8px 14px;border-bottom:1px solid #EDF1F5}
+.fieldrow:hover{background:#FAFCFE}
+.fieldrow .fname{font-size:12px;font-weight:600;color:var(--muted)}
+.fieldrow input{padding:6px 9px;font-size:12.5px}
+.fieldrow.err input{border-color:var(--red);background:#FFF7F6}
+.valrow{display:flex;gap:10px;padding:9px 14px;border-bottom:1px solid #EDF1F5;font-size:12.5px;align-items:flex-start}
+.valrow .vic{width:18px;height:18px;border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;font-size:11px;color:#fff;margin-top:1px}
+.valrow.pass .vic{background:var(--teal)}.valrow.fail .vic{background:var(--red)}.valrow.warn .vic{background:var(--amber)}
+.valrow small{color:var(--muted);display:block}
+.actionbar{display:flex;gap:9px;flex-wrap:wrap;padding:14px;border-top:1px solid var(--line);background:#FAFBFC;border-radius:0 0 var(--radius) var(--radius)}
+.route-step{display:flex;gap:12px;padding:10px 14px;border-bottom:1px solid #EDF1F5;font-size:12.5px}
+.route-step .rdot{width:11px;height:11px;border-radius:50%;background:var(--line);margin-top:4px;flex:none}
+.route-step.done .rdot{background:var(--teal)}.route-step.now .rdot{background:var(--blue);box-shadow:0 0 0 3px var(--blue-bg)}
+.toast{position:fixed;bottom:22px;right:22px;background:var(--ink);color:#fff;padding:12px 18px;border-radius:10px;font-size:13px;box-shadow:0 8px 24px rgba(15,27,45,.35);opacity:0;transform:translateY(8px);transition:.25s;z-index:99;max-width:380px}
+.toast.show{opacity:1;transform:none}
+.wiz{display:flex;overflow-x:auto;margin-bottom:18px}
+.wiz button{display:flex;flex-direction:column;gap:3px;padding:10px 14px;border-bottom:3px solid var(--line);font-size:12px;color:var(--muted);min-width:104px;text-align:left}
+.wiz button b{font-size:12.5px;color:inherit}
+.wiz button .n{font-family:var(--mono);font-size:10px}
+.wiz button.active{border-color:var(--blue);color:var(--ink)}
+.wiz button.done{border-color:var(--teal);color:var(--teal)}
+.rulecard{border:1px solid var(--line);border-radius:8px;padding:10px 13px;margin-bottom:8px;display:flex;justify-content:space-between;gap:10px;align-items:center;font-size:12.5px;background:#fff}
+.addform{background:#F7FAFD;border:1px dashed #B9CBE4;border-radius:10px;padding:14px;margin-top:10px}
+.addform .fr{display:grid;gap:10px;margin-bottom:10px}
+.proc-item{padding:12px 14px;border-bottom:1px solid #EDF1F5;cursor:pointer;display:flex;justify-content:space-between;gap:8px;align-items:center}
+.proc-item:hover{background:#F6F9FC}
+.proc-item.sel{background:var(--blue-bg);box-shadow:inset 3px 0 0 var(--blue)}
+.vbars{display:flex;align-items:flex-end;gap:18px;height:150px;padding:6px 8px 0}
+.vbars .vb{flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;height:100%;justify-content:flex-end}
+.vbars .vb .col{width:100%;max-width:52px;background:linear-gradient(180deg,#3D7BFF,var(--blue));border-radius:6px 6px 0 0;position:relative}
+.vbars .vb .col.due{background:linear-gradient(180deg,#E09A2F,var(--amber))}
+.vbars .vb .val{font-family:var(--mono);font-size:10.5px;color:var(--ink);font-weight:600}
+.vbars .vb .mo{font-size:11px;color:var(--muted);font-weight:600}
+.bar-h{display:flex;align-items:center;gap:10px;margin-bottom:9px;font-size:12px}
+.bar-h .lbl{width:118px;color:var(--muted)}
+.bar-h .trk{flex:1;height:9px;background:#E9EEF3;border-radius:5px;overflow:hidden}
+.bar-h .trk i{display:block;height:100%;background:var(--blue);border-radius:5px}
+.bar-h .v{font-family:var(--mono);width:40px;text-align:right}
+.tabs{display:flex;gap:6px;margin-bottom:14px}
+.tabs button{padding:7px 14px;border-radius:8px;font-size:12.5px;font-weight:600;border:1px solid var(--line);background:#fff;color:var(--muted)}
+.tabs button.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+.empty{padding:40px;text-align:center;color:var(--muted)}
+@media(max-width:1000px){.detail{grid-template-columns:1fr}.sidebar{width:64px;min-width:64px}.sidebar .brand small,.sidebar .nav span.t,.sidebar .user,.nav .group{display:none}.brand{justify-content:center;font-size:0}.brand .dot{width:16px;height:16px}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+.modal-backdrop{position:fixed;inset:0;background:rgba(15,27,45,.55);z-index:200;display:flex;align-items:center;justify-content:center;padding:20px}
+.modal{background:#fff;border-radius:14px;max-width:520px;width:100%;max-height:88vh;overflow:auto;box-shadow:0 20px 60px rgba(0,0,0,.3)}
+.modal .mhead{padding:16px 20px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center}
+.modal .mhead h3{font-size:16px;color:var(--ink)}
+.modal .mbody{padding:20px}
+.modal .mfoot{padding:14px 20px;border-top:1px solid var(--line);display:flex;gap:10px;justify-content:flex-end}
+.dropzone{border:2px dashed var(--line);border-radius:12px;padding:30px 20px;text-align:center;color:var(--muted);cursor:pointer;transition:.15s}
+.dropzone:hover,.dropzone.drag{border-color:var(--blue);background:var(--blue-bg)}
+.extract-preview{max-width:100%;max-height:220px;border-radius:8px;margin:0 auto 14px;display:block;box-shadow:0 4px 14px rgba(0,0,0,.15)}
+.spinner{width:34px;height:34px;border:3px solid #E6EBF0;border-top-color:var(--blue);border-radius:50%;animation:spin 0.8s linear infinite;margin:20px auto}
+@keyframes spin{to{transform:rotate(360deg)}}
+.livefield{display:flex;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px solid #EDF1F5;font-size:13px}
+.livefield b{color:var(--ink)}
+</style>
+
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar">
+    <div class="brand"><span class="dot"></span><span>Audree<small>AI Business Platform</small></span></div>
+    <nav class="nav" id="nav"></nav>
+    <div class="user"><b>Priya Nair</b>Shared Services · Reviewer + Owner</div>
+  </aside>
+  <div class="main">
+    <div class="topbar" id="topbar"></div>
+    <div class="content" id="content"></div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+/* ============ CORE DATA MODEL ============ */
+const FUNCS=['Finance','HR','Legal','Logistics','Manufacturing','Quality','Healthcare'];
+const TARGETS=['SAP S/4HANA — FI (MIRO)','SAP MM','HRMS (Workday / SAP HCM)','WMS','MES','LIMS','HIMS','DMS only'];
+const CHECKTYPES=['Master data lookup','Duplicate check','PO / GRN match','Regex / format','Govt API (GSTN · NSDL · UIDAI)','Value recompute','Range / spec check','Custom condition'];
+const USERS=['Priya Nair (Finance)','Arjun Rao (Finance Mgr)','Meera Shah (HR)','Vikram Iyer (Legal)','Sana Qureshi (Logistics)','Naveen Kulkarni (Production)','Dr. Rohit Menon (QA)'];
+
+/* Every document type is a configurable PROCESS: any function, any template, any fields, any target */
+const state={
+  view:'inbox',selDoc:null,selProc:0,ownerStep:0,mastersTab:0,selMaster:0,
+  filters:{func:'All',type:'All',status:'All',channel:'All'},
+  processes:[
+    proc('P-FIN-01','Vendor Invoice — India GST','Finance','Invoice',['Email','WhatsApp','Vendor portal'],
+      tpl('Tax Invoice (GST)',40),
+      [pf('Vendor GSTIN','Regex + GSTN API',true,null),pf('Invoice No','Text',true,null),pf('Invoice Date','Date',true,null),pf('PO Reference','Master lookup',false,['Vendor PO Master','PO No']),pf('Taxable Value','Currency',true,null),pf('Total Amount','Currency',true,null)],
+      [pr('Duplicate check','Duplicate check','Invoice No + Vendor + Amount within 365 days','Block'),pr('3-way match','PO / GRN match','PO qty vs GRN vs invoice, tolerance 2%','Exception'),pr('GSTIN active','Govt API (GSTN · NSDL · UIDAI)','GSTN portal status = Active','Block'),pr('Tax recompute','Value recompute','Rate × taxable vs extracted tax','Exception')],
+      [rt('Amount ≤ ₹2,00,000','AP Desk → Auto-post'),rt('Amount > ₹2,00,000','AP Desk → Finance Manager')],
+      'SAP S/4HANA — FI (MIRO)',true,true),
+    proc('P-HR-01','Employee KYC — PAN Card','HR','PAN Card',['WhatsApp','Email'],
+      tpl('PAN Card (photo)',24),
+      [pf('Name on card','Text',true,['Employee Master','Full Name']),pf("Father's Name",'Text',false,null),pf('Date of Birth','Date',true,['Employee Master','DOB']),pf('PAN Number','Regex + NSDL API',true,null)],
+      [pr('PAN format','Regex / format','[A-Z]{5}[0-9]{4}[A-Z]','Block'),pr('NSDL status','Govt API (GSTN · NSDL · UIDAI)','PAN active on NSDL','Block'),pr('Name match','Master data lookup','Fuzzy match ≥ 90% vs Employee Master','Exception'),pr('Image quality','Custom condition','Blur / glare score below threshold','Exception')],
+      [rt('All documents','HR Ops → HR Manager')],'HRMS (Workday / SAP HCM)',true,true),
+    proc('P-HR-02','Employee KYC — Aadhaar','HR','Aadhaar Card',['WhatsApp'],
+      tpl('Aadhaar (masked photo)',18),
+      [pf('Name','Text',true,['Employee Master','Full Name']),pf('Aadhaar (last 4)','Masked number',true,null),pf('DOB / YOB','Date',true,['Employee Master','DOB']),pf('Address','Text',false,null)],
+      [pr('Mask compliance','Custom condition','First 8 digits must be masked (UIDAI norm)','Block'),pr('Verhoeff checksum','Regex / format','Aadhaar checksum valid','Block'),pr('Employee match','Master data lookup','Name + DOB vs Employee Master','Exception')],
+      [rt('All documents','HR Ops → HR Manager')],'HRMS (Workday / SAP HCM)',true,true),
+    proc('P-LOG-01','Gate Pass — Inbound','Logistics','Gate Pass',['WhatsApp','Email'],
+      tpl('Gate Pass (security format)',15),
+      [pf('Gate Pass No','Text',true,null),pf('Vehicle No','Regex',true,null),pf('Transporter','Master lookup',true,['Transporter Master','Name']),pf('PO Reference','Master lookup',false,['Vendor PO Master','PO No']),pf('Material / Qty','Text',true,null)],
+      [pr('Transporter registered','Master data lookup','Exists + active in Transporter Master','Block'),pr('Vehicle format','Regex / format','Indian RTO plate pattern','Warn'),pr('Open PO','PO / GRN match','PO open with pending qty','Exception')],
+      [rt('All documents','Security Desk → Stores → Auto GRN trigger')],'WMS',true,true),
+    proc('P-LOG-02','Shipping Note — Outbound','Logistics','Shipping Note',['Email'],
+      tpl('Shipping Note',12),
+      [pf('SN Number','Text',true,null),pf('Consignee','Text',true,null),pf('Dispatch Qty','Number',true,null),pf('Carrier','Master lookup',true,['Transporter Master','Name'])],
+      [pr('Stock available','Master data lookup','Qty ≤ unrestricted stock','Block'),pr('Duplicate SN','Duplicate check','SN number, 180 days','Block')],
+      [rt('All documents','Dispatch Desk → Logistics Manager')],'WMS',true,true),
+    proc('P-MFG-01','BMR Extract → MES','Manufacturing','BMR',['SFTP','Email'],
+      tpl('Batch Manufacturing Record',30),
+      [pf('Batch No','Master lookup',true,['Batch Master','Batch No']),pf('Product','Master lookup',true,['Batch Master','Product']),pf('Actual Yield %','Number',true,null),pf('Deviations','Number',true,null),pf('Mfg Start / End','Date range',true,null)],
+      [pr('Batch exists','Master data lookup','Batch No in Batch Master, status in-process','Block'),pr('Yield in range','Range / spec check','Yield 92–102% of standard','Exception'),pr('Deviation closure','Custom condition','All deviations closed before release','Block')],
+      [rt('All documents','Production Officer → QA Release')],'MES',true,true),
+    proc('P-HSP-01','OPD Sheet → HIMS','Healthcare','OPD Sheet',['Scan station','WhatsApp'],
+      tpl('Handwritten OPD register',35),
+      [pf('UHID','Master lookup',true,['Patient Master','UHID']),pf('Patient Name','Text',true,['Patient Master','Patient Name']),pf('Diagnosis','Text',true,null),pf('Medication (as written)','Master lookup',true,['Drug Synonym Master','Alias (as written)']),pf('Dosage / Frequency','Text',true,null)],
+      [pr('Patient exists','Master data lookup','UHID live-checked in HIMS before posting','Block'),pr('Drug normalization','Master data lookup','Brand/local name → canonical generic + HIMS code via Drug Synonym Master','Block'),pr('Dosage plausibility','Range / spec check','Dose within formulary min–max for the canonical drug','Exception'),pr('Handwriting confidence','Custom condition','Any clinical field < 85% forces human review','Exception')],
+      [rt('All documents','Nursing Desk → Medical Records (MRD)')],'HIMS',true,true),
+  ],
+  docs:[],masters:[
+    {name:'Employee Master',src:{sys:'HRMS (Workday)',mode:'Live API'},cols:['Emp ID','Full Name','DOB','Department'],rows:[['E-1042','Kiran Kumar Reddy','14-03-1994','Production'],['E-1188','Anita Joseph','02-11-1990','Finance'],['E-0771','Mohd. Faisal','23-06-1988','Logistics']]},
+    {name:'Vendor PO Master',src:{sys:'SAP S/4HANA',mode:'Live API (OData)'},cols:['PO No','Vendor','Open Qty','Value'],rows:[['PO-45021','Sundaram Polymers','500 kg','₹4.1L'],['PO-45106','Kalpana Steels','12 T','₹12.4L']]},
+    {name:'Transporter Master',src:{sys:'SAP S/4HANA (LFA1)',mode:'Nightly sync'},cols:['Code','Name','Status','GSTIN'],rows:[['T-101','BlueDart Surface','Active','06AABCB1234K1Z2'],['T-114','Sree Kaveri Logistics','Active','36AASFK8821M1Z7']]},
+    {name:'Batch Master',src:{sys:'MES',mode:'Live API'},cols:['Batch No','Product','Std Yield %','Status'],rows:[['VX-2216','Paracetamol API','98.0','In-process'],['VX-2217','Ibuprofen API','96.5','Planned']]},
+    {name:'Patient Master',src:{sys:'HIMS',mode:'Live API'},cols:['UHID','Patient Name','DOB','Last Visit'],rows:[['UH-220481','Lakshmi Devi','03-08-1961','01-Jul-2026'],['UH-198822','Suresh Babu','19-02-1975','08-Jul-2026']]},
+    {name:'Drug Synonym Master',src:{sys:'Audree canonical layer',mode:'Owner maintained'},cols:['Alias (as written)','Canonical (generic)','HIMS code','SAP MM code'],rows:[
+      ['Dolo 650','Paracetamol 650 mg','MED-PARA-650','MM-40120'],
+      ['Crocin Advance','Paracetamol 500 mg','MED-PARA-500','MM-40119'],
+      ['Calpol 500','Paracetamol 500 mg','MED-PARA-500','MM-40119'],
+      ['Brufen 400','Ibuprofen 400 mg','MED-IBU-400','MM-40231'],
+      ['Augmentin 625','Amoxicillin+Clavulanate 625 mg','MED-AMC-625','MM-40510']]},
+  ],
+  audit:[
+    aud('08-Jul 09:14','INV-88231','Received','Channel: Email → Inbox, matched to process P-FIN-01','System'),
+    aud('08-Jul 09:14','INV-88231','AI Extraction','6 fields read, avg confidence 89%','Veerai'),
+    aud('08-Jul 09:20','PAN-1042','Received','WhatsApp image from +91-98xxx, matched to P-HR-01','System'),
+    aud('08-Jul 09:21','PAN-1042','AI Extraction','Photo de-skewed, 4 fields read','Veerai'),
+    aud('08-Jul 08:31','GP-2214','Received','WhatsApp PDF from transporter, matched to P-LOG-01','System'),
+    aud('07-Jul 17:44','BMR-VX2216','AI Extraction','86-page BMR parsed, 5 fields mapped to MES','Veerai'),
+  ],
+  newMaster:{name:'',cols:''},
+};
+function proc(id,name,func,docType,channels,template,fields,rules,route,target,tested,published){return{id,name,func,docType,channels,template,fields,rules,route,target,tested,published,templates:[template,tpl('Alt layout — scanned',8)]}}
+function tpl(name,samples){return{name,samples}}
+function pf(name,type,mandatory,master){return{name,type,mandatory,master}}
+function pr(name,type,cond,action){return{name,type,cond,action}}
+function rt(cond,path){return{cond,path}}
+function aud(ts,docId,action,detail,by){return{ts,docId,action,detail,by}}
+function f(name,value,conf){return{name,value,conf,edited:false}}
+function v(s,name,detail){return{s,name,detail}}
+function m(who,text,att){return{who,text,att,tm:'09:'+(10+Math.floor(Math.random()*40))}}
+
+/* ---- seeded documents: each belongs to a process; attachment is image or pdf ---- */
+state.docs=[
+  {id:'INV-88231',procId:'P-FIN-01',func:'Finance',type:'Invoice',party:'Sundaram Polymers Pvt Ltd',channel:'Email',status:'pending',amount:'₹4,83,560',received:'08-Jul-2026',
+   fin:{month:'Jul',invDate:'02-Jul-2026',due:'16-Aug-2026',val:483560,paid:false,overdue:0},
+   attachment:{kind:'pdf',name:'SP-2026-1147.pdf',pages:2},
+   fields:[f('Vendor GSTIN','33AAACS1298F1ZQ',96),f('Invoice No','SP/2026/1147',99),f('Invoice Date','02-Jul-2026',97),f('PO Reference','PO-45021',91),f('Taxable Value','₹4,09,800',94),f('Total Amount','₹4,83,560',95)],
+   checks:[v('pass','Duplicate check','No matching invoice no + amount in 365 days'),v('warn','3-way match','GRN 480 kg vs invoiced 500 kg — 2% tolerance exceeded'),v('pass','GSTIN active','Active on GSTN, state code matches'),v('fail','Tax recompute','18% of taxable = ₹73,764 vs extracted ₹73,760 (Δ ₹4)')],
+   route:['AP Desk','Finance Manager (>₹2L)','Post to SAP FI (MIRO)'],routePos:0,
+   chat:[m('Sundaram AP','Invoice against PO-45021, material delivered 28-Jun.',{kind:'pdf',name:'SP-2026-1147.pdf'}),m('me','Received. GRN shows 480 kg — please confirm.'),m('Sundaram AP','20 kg short-shipped, credit note follows.')]},
+  {id:'PAN-1042',procId:'P-HR-01',func:'HR',type:'PAN Card',party:'Kiran Kumar Reddy (new joiner E-1042)',channel:'WhatsApp',status:'pending',amount:'—',received:'08-Jul-2026',
+   attachment:{kind:'image',name:'IMG_20260708_0919.jpg'},
+   fields:[f('Name on card','KIRAN KUMAR REDDY',95),f("Father's Name",'K SRINIVASA REDDY',88),f('Date of Birth','14-03-1994',93),f('PAN Number','BQFPR91xxK',68)],
+   checks:[v('pass','PAN format','Matches [A-Z]{5}[0-9]{4}[A-Z]'),v('warn','NSDL status','API returned partial match — retry queued'),v('pass','Name match','97% match vs Employee Master E-1042'),v('fail','Image quality','Glare over 2 characters — confidence 68%')],
+   route:['HR Ops','HR Manager','Post to HRMS + archive to DMS'],routePos:0,
+   chat:[m('Kiran (E-1042)','Hi, sharing my PAN card for onboarding.',{kind:'image',name:'IMG_20260708_0919.jpg'}),m('me','Thanks Kiran. The photo has glare on the PAN number — please resend in daylight.'),m('Kiran (E-1042)','Sure, sending again in 10 mins.')]},
+  {id:'AAD-0332',procId:'P-HR-02',func:'HR',type:'Aadhaar Card',party:'Kiran Kumar Reddy (new joiner E-1042)',channel:'WhatsApp',status:'exception',amount:'—',received:'08-Jul-2026',
+   attachment:{kind:'image',name:'IMG_20260708_0921.jpg'},
+   fields:[f('Name','Kiran Kumar Reddy',94),f('Aadhaar (last 4)','XXXX XXXX 8813',97),f('DOB / YOB','1994',72),f('Address','H.No 4-52, Kukatpally, Hyderabad',81)],
+   checks:[v('pass','Mask compliance','First 8 digits masked per UIDAI norm'),v('pass','Verhoeff checksum','Valid'),v('fail','Employee match','DOB shows year only — full DOB needed vs master 14-03-1994')],
+   route:['HR Ops','HR Manager','Post to HRMS + archive to DMS'],routePos:0,
+   chat:[m('Kiran (E-1042)','Aadhaar copy attached (masked).',{kind:'image',name:'IMG_20260708_0921.jpg'})]},
+  {id:'GP-2214',procId:'P-LOG-01',func:'Logistics',type:'Gate Pass',party:'Sree Kaveri Logistics · TS09 UB 4471',channel:'WhatsApp',status:'pending',amount:'—',received:'08-Jul-2026',
+   attachment:{kind:'pdf',name:'gatepass_2214.pdf',pages:1},
+   fields:[f('Gate Pass No','GP/26/2214',98),f('Vehicle No','TS09 UB 4471',96),f('Transporter','Sree Kaveri Logistics',94),f('PO Reference','PO-45021',90),f('Material / Qty','PP Granules · 480 kg',92)],
+   checks:[v('pass','Transporter registered','T-114 active in Transporter Master'),v('pass','Vehicle format','Valid TS RTO plate'),v('pass','Open PO','PO-45021 open, 500 kg pending')],
+   route:['Security Desk','Stores (GRN trigger)','Post to WMS'],routePos:0,
+   chat:[m('Sree Kaveri','Vehicle reaching gate by 10:30, gate pass attached.',{kind:'pdf',name:'gatepass_2214.pdf'}),m('me','Approved entry to bay 3.')]},
+  {id:'SN-9981',procId:'P-LOG-02',func:'Logistics',type:'Shipping Note',party:'Dispatch — Consignee: Medisphere Ltd',channel:'Email',status:'approved',amount:'—',received:'07-Jul-2026',
+   ship:{consignee:'Medisphere Ltd, Pune',qty:'1,200 units',carrier:'BlueDart Surface',note:'Dispatched 07-Jul, POD awaited',pending:false},
+   attachment:{kind:'pdf',name:'SN9981.pdf',pages:1},
+   fields:[f('SN Number','SN-9981',99),f('Consignee','Medisphere Ltd, Pune',97),f('Dispatch Qty','1,200 units',96),f('Carrier','BlueDart Surface',98)],
+   checks:[v('pass','Stock available','1,450 units unrestricted'),v('pass','Duplicate SN','New')],
+   route:['Dispatch Desk','Logistics Manager','Post to WMS'],routePos:3,
+   chat:[m('Dispatch','SN for today\'s Medisphere consignment.',{kind:'pdf',name:'SN9981.pdf'})]},
+  {id:'BMR-VX2216',procId:'P-MFG-01',func:'Manufacturing',type:'BMR',party:'Batch VX-2216 · Paracetamol API',channel:'SFTP',status:'pending',amount:'—',received:'07-Jul-2026',
+   attachment:{kind:'pdf',name:'BMR_VX2216_signed.pdf',pages:86},
+   fields:[f('Batch No','VX-2216',99),f('Product','Paracetamol API',98),f('Actual Yield %','97.4',95),f('Deviations','1 (DEV-0912)',89),f('Mfg Start / End','12-Jun → 26-Jun-2026',96)],
+   checks:[v('pass','Batch exists','VX-2216 in Batch Master, in-process'),v('pass','Yield in range','97.4% vs standard 98% — within 92–102%'),v('fail','Deviation closure','DEV-0912 still open in QMS')],
+   route:['Production Officer','QA Release','Post to MES + archive BMR to DMS'],routePos:0,
+   chat:[m('Production','Signed BMR uploaded for VX-2216, 86 pages.',{kind:'pdf',name:'BMR_VX2216_signed.pdf'})]},
+  {id:'OPD-3321',procId:'P-HSP-01',func:'Healthcare',type:'OPD Sheet',party:'Suresh Babu · UHID UH-198822',channel:'WhatsApp',status:'pending',amount:'—',received:'08-Jul-2026',
+   attachment:{kind:'image',name:'opd_register_p14.jpg'},
+   fields:[f('UHID','UH-198822',93),f('Patient Name','Suresh Babu',91),f('Diagnosis','Viral fever, body ache',84),f('Medication (as written)','Dolo 650 → Paracetamol 650 mg (MED-PARA-650)',88),f('Dosage / Frequency','1-0-1 × 3 days',79)],
+   checks:[v('pass','Patient exists','UH-198822 verified live in HIMS — Suresh Babu, last visit today'),v('pass','Drug normalization','"Dolo 650" mapped via synonym master → Paracetamol 650 mg · HIMS code MED-PARA-650'),v('pass','Dosage plausibility','650 mg × 2/day within formulary range'),v('fail','Handwriting confidence','Frequency read at 79% (<85% clinical threshold) — human must confirm')],
+   route:['Nursing Desk','Medical Records (MRD)','Post to HIMS'],routePos:0,
+   chat:[m('Ward Scanner','OPD register page 14, Dr. Kavitha\'s morning OPD.',{kind:'image',name:'opd_register_p14.jpg'}),m('me','Frequency unclear — confirming 1-0-1 with nursing desk.')]},
+  /* ---- more invoices: mix of paid / due / overdue for AP analytics ---- */
+  inv('INV-87710','Vertex Chemicals Ltd','₹2,10,400',210400,'Apr','05-Apr-2026','05-May-2026',false,64,'approved','VC/26/0281','PO-44710'),
+  inv('INV-87990','Kalpana Steels Ltd','₹6,72,000',672000,'May','18-May-2026','17-Jun-2026',false,21,'approved','KS/26/1105','PO-45106'),
+  inv('INV-88012','Vertex Chemicals Ltd','₹1,44,780',144780,'May','28-May-2026','27-Jun-2026',true,0,'approved','VC/26/0342','PO-44881'),
+  inv('INV-88110','Meridian Freight Fwd','₹96,500',96500,'Jun','10-Jun-2026','10-Jul-2026',false,0,'approved','MF/26/0912','—'),
+  inv('INV-88190','Sundaram Polymers Pvt Ltd','₹3,18,200',318200,'Jun','25-Jun-2026','24-Aug-2026',false,0,'approved','SP/2026/1101','PO-44988'),
+  /* ---- more shipping notes: pending vs dispatched for logistics analytics ---- */
+  sn('SN-9990','Apex Pharma Distributors, Nagpur','800 units','Sree Kaveri Logistics','pending','Awaiting vehicle placement — planned 09-Jul','06-Jul-2026'),
+  sn('SN-9995','Medisphere Ltd, Pune','2,400 units','BlueDart Surface','exception','Stock short by 150 units — batch VX-2217 not yet released','07-Jul-2026'),
+];
+/* compact builders for analytic seed docs (still fully openable) */
+function inv(id,party,amount,val,month,invDate,due,paid,overdue,status,invNo,po){
+  return {id,procId:'P-FIN-01',func:'Finance',type:'Invoice',party,channel:'Email',status,amount,received:invDate,
+   fin:{month,invDate,due,val,paid,overdue},attachment:{kind:'pdf',name:id+'.pdf',pages:1},
+   fields:[f('Invoice No',invNo,98),f('Invoice Date',invDate,97),f('PO Reference',po,93),f('Total Amount',amount,96),f('Due Date',due,95)],
+   checks:[v('pass','Duplicate check','No match in 365 days'),v('pass','GSTIN active','Verified'),v('pass','Mandatory fields','Complete')],
+   route:['AP Desk','Finance Manager (>₹2L)','Post to SAP FI (MIRO)'],routePos:status==='approved'?3:0,
+   chat:[m(party.split(' ')[0]+' AP','Invoice '+invNo+' attached for processing.',{kind:'pdf',name:id+'.pdf'})]};
+}
+function sn(id,consignee,qty,carrier,status,note,received){
+  return {id,procId:'P-LOG-02',func:'Logistics',type:'Shipping Note',party:'Dispatch — Consignee: '+consignee.split(',')[0],channel:'Email',status,amount:'—',received,
+   ship:{consignee,qty,carrier,note,pending:status!=='approved'},attachment:{kind:'pdf',name:id+'.pdf',pages:1},
+   fields:[f('SN Number',id,99),f('Consignee',consignee,97),f('Dispatch Qty',qty,96),f('Carrier',carrier,97)],
+   checks:[status==='exception'?v('fail','Stock available',note):v('pass','Stock available','Sufficient unrestricted stock'),v('pass','Duplicate SN','New')],
+   route:['Dispatch Desk','Logistics Manager','Post to WMS'],routePos:0,
+   chat:[m('Dispatch',note,{kind:'pdf',name:id+'.pdf'})]};
+}
+
+/* ============ HELPERS ============ */
+const $=id=>document.getElementById(id);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+function toast(msg){const t=$('toast');t.textContent=msg;t.classList.add('show');clearTimeout(t._x);t._x=setTimeout(()=>t.classList.remove('show'),2800)}
+function log(docId,action,detail,by='Priya Nair'){const d=new Date();state.audit.unshift(aud('08-Jul '+String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0'),docId,action,detail,by))}
+function statusChip(s){return{pending:'<span class="chip amber">Needs review</span>',exception:'<span class="chip red">Exception</span>',approved:'<span class="chip teal">Approved · Posted</span>',rejected:'<span class="chip red">Rejected</span>',clarify:'<span class="chip violet">Awaiting clarification</span>',routing:'<span class="chip blue">In approval</span>'}[s]||s}
+function confHtml(c){const cls=c>=90?'hi':c>=75?'md':'lo';return `<span class="conf ${cls}"><span class="bar"><i style="width:${c}%"></i></span>${c}%</span>`}
+function typeIcon(t){return{'Invoice':'🧾','PAN Card':'🪪','Aadhaar Card':'🪪','Gate Pass':'🚚','Shipping Note':'📦','BMR':'🏭','Contract':'📜','COA':'🧪','OPD Sheet':'🏥'}[t]||'📄'}
+function attIcon(k){return k==='image'?'🖼️':'📄'}
+function procById(id){return state.processes.find(p=>p.id===id)}
+
+/* ============ NAV ============ */
+const NAV=[['group','Operations'],['inbox','📥','Document Inbox'],['audit','🛡️','Audit & Analytics'],['group','Application Owner'],['studio','⚙️','Process Studio'],['masters','🗂️','Masters & Mapping']];
+function renderNav(){
+  const pend=state.docs.filter(d=>['pending','exception'].includes(d.status)).length;
+  $('nav').innerHTML=NAV.map(n=>n[0]==='group'?`<div class="group">${n[1]}</div>`:
+   `<button class="${state.view===n[0]||(state.view==='doc'&&n[0]==='inbox')?'active':''}" onclick="go('${n[0]}')">${n[1]}<span class="t">${n[2]}</span>${n[0]==='inbox'&&pend?`<span class="badge">${pend}</span>`:''}</button>`).join('');
+}
+function go(vw){state.view=vw;state.selDoc=null;render()}
+function openDoc(id){state.view='doc';state.selDoc=id;state.docTab='original';render()}
+
+/* ============ INBOX with FUNCTION + TYPE FILTERS ============ */
+function setFilter(k,val){state.filters[k]=val;render()}
+function renderInbox(){
+  $('topbar').innerHTML=`<h1>Document Inbox</h1><span class="sub">Any function · any document type · email, WhatsApp, portal, SFTP, ERP</span>
+   <button class="btn primary" style="margin-left:auto" onclick="openLiveUpload()">📷 Live Extract (real document)</button>
+   <button class="btn" style="padding:8px 10px" title="AI settings" onclick="openSettings()">⚙️</button>`;
+  const F=state.filters;
+  const types=['All',...new Set(state.docs.map(d=>d.type))];
+  const smap={'Needs review':'pending','Exception':'exception','Approved':'approved','In approval':'routing','Awaiting clarification':'clarify','Rejected':'rejected'};
+  const docs=state.docs.filter(d=>
+    (F.func==='All'||d.func===F.func)&&(F.type==='All'||d.type===F.type)&&
+    (F.status==='All'||d.status===smap[F.status])&&(F.channel==='All'||d.channel===F.channel));
+  const stats=[['Documents',state.docs.length],['Exceptions',state.docs.filter(d=>d.status==='exception').length],['Live processes',state.processes.filter(p=>p.published).length],['Avg. AI confidence','91%']];
+  const fileWarning=window.location.protocol==='file:'?`
+   <div class="card" style="padding:12px 16px;margin-bottom:14px;background:var(--amber-bg);border-color:#EAD6A8">
+     <b style="color:var(--amber)">⚠️ Live Extract won't work from a local file.</b>
+     <span style="color:var(--muted)"> You're opening this straight from disk (file://…). Google's API blocks requests from local files. Host it free at
+     <a href="https://app.netlify.com/drop" target="_blank" style="color:var(--blue)">app.netlify.com/drop</a> (drag the file in, get a URL, open that instead) — everything else in this demo works fine locally.</span>
+   </div>`:'';
+  $('content').innerHTML=`
+   ${fileWarning}
+   <div class="grid" style="grid-template-columns:repeat(4,1fr);margin-bottom:16px">${stats.map(s=>`<div class="card stat"><div class="n">${s[1]}</div><div class="l">${s[0]}</div></div>`).join('')}</div>
+   <div class="filterbar">
+     <div><label>Business function</label><select onchange="setFilter('func',this.value)">${['All',...FUNCS].map(x=>`<option ${F.func===x?'selected':''}>${x}</option>`).join('')}</select></div>
+     <div><label>Document type</label><select onchange="setFilter('type',this.value)">${types.map(x=>`<option ${F.type===x?'selected':''}>${x}</option>`).join('')}</select></div>
+     <div><label>Status</label><select onchange="setFilter('status',this.value)">${['All','Needs review','Exception','In approval','Awaiting clarification','Approved','Rejected'].map(x=>`<option ${F.status===x?'selected':''}>${x}</option>`).join('')}</select></div>
+     <div><label>Channel</label><select onchange="setFilter('channel',this.value)">${['All','Email','WhatsApp','SFTP'].map(x=>`<option ${F.channel===x?'selected':''}>${x}</option>`).join('')}</select></div>
+     <button class="btn" onclick="state.filters={func:'All',type:'All',status:'All',channel:'All'};render()">Clear filters</button>
+   </div>
+   <div class="card"><table>
+    <thead><tr><th>Document</th><th>Function / Type</th><th>From / Party</th><th>Channel · File</th><th>Amount</th><th>AI Conf.</th><th>Status</th></tr></thead>
+    <tbody>${docs.map(d=>{const avg=Math.round(d.fields.reduce((s,x)=>s+x.conf,0)/d.fields.length);return `
+      <tr class="row" onclick="openDoc('${d.id}')">
+        <td><b class="mono">${d.id}</b><br><small style="color:var(--muted)">${d.received}</small></td>
+        <td><span class="chip grey">${d.func}</span><br><span style="font-size:12.5px">${typeIcon(d.type)} ${d.type}</span></td>
+        <td>${esc(d.party)}</td>
+        <td><span class="chip ${d.channel==='WhatsApp'?'teal':'grey'}">${d.channel}</span><br><small class="mono" style="color:var(--muted)">${attIcon(d.attachment.kind)} ${d.attachment.kind.toUpperCase()}</small></td>
+        <td class="mono">${d.amount}</td><td>${confHtml(avg)}</td><td>${statusChip(d.status)}</td>
+      </tr>`}).join('')||'<tr><td colspan="7" class="empty">No documents match these filters.</td></tr>'}
+    </tbody></table></div>`;
+}
+
+/* ============ DOCUMENT DETAIL ============ */
+const PIPE=['Inbox','AI Read','Validation','User Action','Routing','Posting','Audit'];
+function pipeStage(d){return d.status==='approved'?6:d.status==='routing'?4:3}
+function renderDocView(){
+  const d=state.docs.find(x=>x.id===state.selDoc);if(!d){go('inbox');return}
+  const p=procById(d.procId), stage=pipeStage(d);
+  $('topbar').innerHTML=`<button class="btn sm" onclick="go('inbox')">← Inbox</button>
+    <h1>${typeIcon(d.type)} ${d.id} — ${esc(d.party)}</h1>${statusChip(d.status)}
+    <span class="chip blue">Process: ${esc(p.name)}</span>`;
+  const fails=d.checks.filter(c=>c.s==='fail').length,warns=d.checks.filter(c=>c.s==='warn').length;
+  $('content').innerHTML=`
+  <div class="card pipe" style="margin-bottom:16px">${PIPE.map((pp,i)=>`
+   <span class="st ${i<stage?'done':i===stage?'now':''}"><span class="ic">${i<stage?'✓':i+1}</span>${pp}</span>${i<PIPE.length-1?`<span class="ln ${i<stage?'done':''}"></span>`:''}`).join('')}</div>
+  <div class="detail">
+    <div>
+      <div class="section-title">Original document — ${attIcon(d.attachment.kind)} ${esc(d.attachment.name)}</div>
+      ${originalView(d)}
+      <div class="section-title" style="margin-top:16px">Source history — ${d.channel}</div>
+      ${d.channel==='WhatsApp'?whatsappPanel(d):emailPanel(d)}
+    </div>
+    <div>
+      <div class="section-title">AI extracted data <span class="chip blue" style="margin-left:6px">Veerai · v4.2</span></div>
+      <div class="card" style="margin-bottom:16px">
+        ${d.fields.map((fl,i)=>`<div class="fieldrow ${fl.conf<75?'err':''}">
+          <div class="fname">${esc(fl.name)}${fl.edited?' <span class="chip violet" style="font-size:9.5px;padding:1px 6px">edited</span>':''}</div>
+          <input value="${esc(fl.value)}" onchange="editField('${d.id}',${i},this.value)" ${d.status==='approved'?'disabled':''}>
+          ${confHtml(fl.conf)}
+        </div>`).join('')}
+        <div style="padding:9px 14px;font-size:11.5px;color:var(--muted)">Fields under 75% are flagged. Corrections feed model retraining for this process's template.</div>
+      </div>
+      <div class="section-title">Send this data by email</div>
+      <div class="card" style="margin-bottom:16px;padding:12px 14px">
+        <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px">
+          <input id="docEmailDest" value="sj.audree@gmail.com" placeholder="destination email" style="flex:1">
+        </div>
+        <div style="display:flex;gap:8px">
+          <button class="btn" style="flex:1" onclick="emailDocumentData('${d.id}')">✉️ Open in email app</button>
+          <button class="btn blue" style="flex:1" onclick="sendDocumentViaGmail('${d.id}')">📨 Send via Gmail (real)</button>
+        </div>
+      </div>
+      <div class="section-title">Validation — ${fails?`<span style="color:var(--red)">${fails} failed</span> · `:''}${warns?`<span style="color:var(--amber)">${warns} warning</span> · `:''}${d.checks.filter(c=>c.s==='pass').length} passed</div>
+      <div class="card" style="margin-bottom:16px">${d.checks.map(c=>`<div class="valrow ${c.s}"><span class="vic">${c.s==='pass'?'✓':c.s==='fail'?'✕':'!'}</span><div><b>${esc(c.name)}</b><small>${esc(c.detail)}</small></div></div>`).join('')}</div>
+      <div class="section-title">Approval route → target: <b>${esc(p.target)}</b></div>
+      <div class="card">
+        ${d.route.map((r,i)=>`<div class="route-step ${i<d.routePos?'done':i===d.routePos&&d.status==='routing'?'now':''}"><span class="rdot"></span><div><b>${esc(r)}</b>${i<d.routePos?'<small style="color:var(--teal);display:block">Completed</small>':i===d.routePos&&d.status==='routing'?'<small style="color:var(--blue);display:block">Awaiting action</small>':''}</div></div>`).join('')}
+        <div class="actionbar">
+          ${d.status==='approved'?`<span class="chip teal">Posted to ${esc(p.target)} · archived to DMS</span>`:`
+          <button class="btn primary" onclick="act('${d.id}','approve')">✓ Approve${fails?' with override':''}</button>
+          <button class="btn" onclick="act('${d.id}','correct')">✎ Save corrections</button>
+          <button class="btn danger" onclick="act('${d.id}','reject')">✕ Reject</button>
+          <select style="width:auto;padding:7px 9px;font-size:12.5px" id="assignee">${USERS.map(u=>`<option>${u}</option>`).join('')}</select>
+          <button class="btn" onclick="act('${d.id}','assign')">Assign</button>
+          <button class="btn ghost" onclick="act('${d.id}','clarify')">Send for clarification →</button>`}
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+/* --- original doc: PDF frame vs WhatsApp photo --- */
+function originalView(d){
+  const tab=state.docTab||'original';
+  const tabs=`<div class="viewtabs">
+    <button class="${tab==='original'?'on':''}" onclick="state.docTab='original';render()">${d.attachment.kind==='image'?'📷 Photo (as received)':'📄 PDF (as received)'}</button>
+    <button class="${tab==='parsed'?'on':''}" onclick="state.docTab='parsed';render()">🔍 AI-read layer</button></div>`;
+  /* --- AI-READ LAYER: detected zones + confidence, works for PDF and photo --- */
+  if(tab==='parsed'){
+    const avg=Math.round(d.fields.reduce((s,x)=>s+x.conf,0)/d.fields.length);
+    return tabs+`<div class="pdfframe"><div class="pdfbar"><span>🔍 AI-read layer · ${esc(d.attachment.name)}</span><span>${d.fields.length} zones · avg ${avg}%</span></div>
+     <div class="pdfpage" style="background:#FBFCFE">
+      <div style="font-size:10.5px;color:var(--blue);font-weight:600;letter-spacing:.8px;margin-bottom:10px">DETECTED ZONES — WHAT THE MODEL READ AND WHERE</div>
+      ${d.fields.map((fl,i)=>`<div style="border:1.5px dashed ${fl.conf>=90?'var(--teal)':fl.conf>=75?'var(--amber)':'var(--red)'};border-radius:6px;padding:7px 10px;margin-bottom:7px;background:#fff">
+        <div style="display:flex;justify-content:space-between;gap:8px;align-items:center">
+          <span style="font-size:10px;color:var(--muted);font-family:var(--mono)">ZONE ${String(i+1).padStart(2,'0')} · ${esc(fl.name.toUpperCase())}</span>${confHtml(fl.conf)}
+        </div>
+        <div style="font-size:13px;font-weight:600;margin-top:2px"><span class="${fl.conf<90?'hl':''}">${esc(fl.value)}</span></div>
+      </div>`).join('')}
+      <div style="font-size:10.5px;color:var(--muted);margin-top:6px">Dashed boxes mirror the bounding boxes on the source ${d.attachment.kind==='image'?'photo (after de-skew)':'PDF'}. Green ≥90% · amber 75–89% · red &lt;75% needs review.</div>
+     </div></div>`;
+  }
+  const rows=d.fields.map(fl=>`<tr><td style="color:var(--muted);padding:5px 8px;font-size:11.5px">${esc(fl.name)}</td><td style="padding:5px 8px">${esc(fl.value)}</td></tr>`).join('');
+  const body=`<div class="dochead"><div><b style="font-family:'Sora';font-size:14px">${esc(d.party.split('(')[0])}</b><br><small style="color:var(--muted)">${d.type.toUpperCase()}</small></div><div class="mono" style="font-weight:600">${d.id}</div></div><table>${rows}</table>`;
+  if(d.attachment.kind==='image')
+    return tabs+`<div class="photowrap"><div class="photo ${d.type.includes('Card')?'card-doc':''}">${body}
+      <div style="margin-top:8px;font-size:10px;color:var(--muted)">📷 ${esc(d.attachment.name)} · received via ${d.channel} · auto de-skewed & enhanced by AI</div></div></div>`;
+  return tabs+`<div class="pdfframe"><div class="pdfbar"><span>${esc(d.attachment.name)}</span><span>Page 1 / ${d.attachment.pages} · SHA-256 ✓</span></div>
+    <div class="pdfpage">${body}<div style="margin-top:10px;padding-top:8px;border-top:1px dashed var(--line);font-size:10px;color:var(--muted)">${d.attachment.pages>1?`+ ${d.attachment.pages-1} more page(s) — AI scanned all pages`:'Single page document'}</div></div></div>`;
+}
+/* --- interactive WhatsApp --- */
+function whatsappPanel(d){
+  return `<div class="wa">
+    <div class="wahead"><span class="av">${esc(d.party[0])}</span><div><b>${esc(d.party.split('(')[0].split('·')[0])}</b><div style="font-size:10.5px;opacity:.85">business account · linked to ${d.id}</div></div></div>
+    <div class="wabody" id="wabody">${d.chat.map(c=>`<div class="wamsg ${c.who==='me'?'me':''}">
+      ${c.who!=='me'?`<div class="who">${esc(c.who)}</div>`:''}
+      ${c.att?`<div class="att" onclick="state.docTab='original';render();toast('Opening ${esc(c.att.name)} in original view')"><span class="fic">${attIcon(c.att.kind)}</span><div><b>${esc(c.att.name)}</b><div style="font-size:10.5px;color:var(--muted)">${c.att.kind==='image'?'Photo':'PDF document'} · tap to view</div></div></div>`:''}
+      ${esc(c.text)}<div class="tm">${c.tm} ${c.who==='me'?'✓✓':''}</div></div>`).join('')}
+    </div>
+    <div class="wafoot"><input id="wain" placeholder="Type a message to ${esc(d.party.split('(')[0].split('·')[0].trim())}…" onkeydown="if(event.key==='Enter')waSend('${d.id}')"><button onclick="waSend('${d.id}')" aria-label="Send">➤</button></div>
+  </div>`;
+}
+function waSend(id){
+  const d=state.docs.find(x=>x.id===id);const inp=$('wain');const txt=inp.value.trim();if(!txt)return;
+  d.chat.push(m('me',txt));log(id,'WhatsApp sent',`"${txt.slice(0,60)}"`);
+  render();
+  setTimeout(()=>{const replies=['Noted, will do. 👍','Sharing the updated copy shortly.','Okay, checking and reverting.','Thanks for the update!'];
+    d.chat.push(m(d.party.split('(')[0].split('·')[0].trim(),replies[Math.floor(Math.random()*replies.length)]));
+    log(id,'WhatsApp received','Reply from sender','System');
+    if(state.view==='doc'&&state.selDoc===id){render();const b=$('wabody');if(b)b.scrollTop=b.scrollHeight}},1400);
+  setTimeout(()=>{const b=$('wabody');if(b)b.scrollTop=b.scrollHeight},30);
+}
+function emailPanel(d){
+  return `<div class="card emailthread">${d.chat.map(c=>`<div style="padding:8px 0;border-bottom:1px solid #EDF1F5">
+    <b>${c.who==='me'?'You':esc(c.who)}</b> <small style="color:var(--muted)">· ${c.tm}</small>
+    ${c.att?`<div style="margin:4px 0"><span class="chip grey">${attIcon(c.att.kind)} ${esc(c.att.name)}</span></div>`:''}
+    <div>${esc(c.text)}</div></div>`).join('')}
+    <div style="display:flex;gap:8px;margin-top:10px"><input id="wain" placeholder="Reply to thread…" onkeydown="if(event.key==='Enter')waSend('${d.id}')"><button class="btn blue" onclick="waSend('${d.id}')">Send</button></div></div>`;
+}
+function editField(id,i,val){const d=state.docs.find(x=>x.id===id);d.fields[i].value=val;d.fields[i].edited=true;d.fields[i].conf=Math.max(d.fields[i].conf,99);log(id,'Field corrected',`${d.fields[i].name} → "${val}"`);toast('Correction captured — will feed model retraining')}
+function act(id,kind){
+  const d=state.docs.find(x=>x.id===id);const p=procById(d.procId);
+  if(kind==='approve'){
+    if(d.routePos<d.route.length-1){d.status='routing';d.routePos++;log(id,'Approved (level '+d.routePos+')','Routed to: '+d.route[d.routePos]);toast('Approved — routed to '+d.route[d.routePos])}
+    else{d.status='approved';d.routePos=d.route.length;log(id,'Posted','Data posted to '+p.target+', file archived to DMS','System');log(id,'Approved','Final approval, posting triggered');toast('Approved · posted to '+p.target)}
+  }
+  if(kind==='reject'){d.status='rejected';log(id,'Rejected','Returned to sender with reasons');toast('Rejected and sender notified')}
+  if(kind==='assign'){const u=$('assignee').value;log(id,'Assigned','Assigned to '+u);toast('Assigned to '+u)}
+  if(kind==='clarify'){d.status='clarify';log(id,'Clarification requested','Query sent over '+d.channel);toast('Clarification sent via '+d.channel)}
+  if(kind==='correct'){log(id,'Corrections saved',d.fields.filter(x=>x.edited).length+' field(s) updated');toast('Corrections saved')}
+  render();
+}
+
+/* ============ AUDIT & ANALYTICS (business insights + operations) ============ */
+const fmtL=n=>n>=100000?'₹'+(n/100000).toFixed(1)+'L':'₹'+n.toLocaleString('en-IN');
+function renderAudit(){
+  $('topbar').innerHTML=`<h1>Audit & Analytics</h1><span class="sub">Business insight from every document — plus the immutable audit trail</span>`;
+  const tab=state.auditTab||0;
+  $('content').innerHTML=`
+   <div class="tabs"><button class="${tab===0?'on':''}" onclick="state.auditTab=0;render()">📊 Business insights</button>
+   <button class="${tab===1?'on':''}" onclick="state.auditTab=1;render()">🛡️ Operations & audit trail</button></div>
+   ${tab===0?bizTab():opsTab()}`;
+}
+function bizTab(){
+  const invs=state.docs.filter(d=>d.fin);
+  const open=invs.filter(i=>!i.fin.paid);
+  const openVal=open.reduce((s,i)=>s+i.fin.val,0);
+  const odInv=open.filter(i=>i.fin.overdue>0);
+  const odVal=odInv.reduce((s,i)=>s+i.fin.val,0);
+  /* month-wise received invoice value */
+  const months=['Apr','May','Jun','Jul'];
+  const byMo=months.map(mo=>invs.filter(i=>i.fin.month===mo).reduce((s,i)=>s+i.fin.val,0));
+  const maxMo=Math.max(...byMo,1);
+  /* aging buckets */
+  const buckets=[['Current (not due)',open.filter(i=>i.fin.overdue===0)],['Overdue 1–30 days',open.filter(i=>i.fin.overdue>0&&i.fin.overdue<=30)],['Overdue 31–60 days',open.filter(i=>i.fin.overdue>30&&i.fin.overdue<=60)],['Overdue 60+ days',open.filter(i=>i.fin.overdue>60)]];
+  const maxB=Math.max(...buckets.map(b=>b[1].reduce((s,i)=>s+i.fin.val,0)),1);
+  /* shipping */
+  const ships=state.docs.filter(d=>d.ship);
+  const pend=ships.filter(s2=>s2.ship.pending);
+  return `
+  <div class="grid" style="grid-template-columns:repeat(4,1fr);margin-bottom:16px">
+    ${[['Open payables',fmtL(openVal),''],['Overdue amount',fmtL(odVal),odVal?'color:var(--red)':''],['Invoices received (Jul)',invs.filter(i=>i.fin.month==='Jul').length,''],['Pending shipments',pend.length,pend.length?'color:var(--amber)':'']].map(s=>`<div class="card stat"><div class="n" style="${s[2]}">${s[1]}</div><div class="l">${s[0]}</div></div>`).join('')}
+  </div>
+  <div class="grid" style="grid-template-columns:1.1fr 1fr;align-items:start;margin-bottom:16px">
+    <div class="card" style="padding:16px">
+      <div class="section-title">Invoice value received — month wise (FY 26-27)</div>
+      <div class="vbars">${months.map((mo,i)=>`<div class="vb"><span class="val">${byMo[i]?fmtL(byMo[i]):'—'}</span><div class="col" style="height:${Math.max(byMo[i]/maxMo*100,3)}%"></div><span class="mo">${mo}</span></div>`).join('')}</div>
+      <div style="font-size:11.5px;color:var(--muted);margin-top:8px">Total received Apr–Jul: <b>${fmtL(invs.reduce((s,i)=>s+i.fin.val,0))}</b> across ${invs.length} invoices — plan cash outflow against due dates below.</div>
+    </div>
+    <div class="card" style="padding:16px">
+      <div class="section-title">Payables aging — what the client must pay</div>
+      ${buckets.map(([lbl,arr])=>{const val2=arr.reduce((s,i)=>s+i.fin.val,0);return `<div class="bar-h"><span class="lbl" style="width:150px">${lbl}</span><span class="trk"><i style="width:${val2/maxB*100}%;background:${lbl.includes('60+')?'var(--red)':lbl.includes('Overdue')?'var(--amber)':'var(--teal)'}"></i></span><span class="v" style="width:58px">${val2?fmtL(val2):'—'}</span></div>`}).join('')}
+      <div style="font-size:11.5px;color:${odVal?'var(--red)':'var(--muted)'};margin-top:8px">${odVal?'⚠ '+fmtL(odVal)+' overdue across '+odInv.length+' invoice(s) — interest / vendor-hold risk.':'No overdue payables.'}</div>
+    </div>
+  </div>
+  <div class="grid" style="grid-template-columns:1.25fr 1fr;align-items:start">
+    <div class="card">
+      <div style="padding:12px 14px;border-bottom:1px solid var(--line)"><b>Payables due & overdue</b> <span class="chip grey">as of 08-Jul-2026</span></div>
+      <table><thead><tr><th>Invoice</th><th>Vendor</th><th>Amount</th><th>Due date</th><th>Status</th></tr></thead><tbody>
+      ${open.sort((a2,b2)=>b2.fin.overdue-a2.fin.overdue).map(i=>`<tr class="row" onclick="openDoc('${i.id}')">
+        <td class="mono">${i.id}</td><td>${esc(i.party.split(' Pvt')[0].split(' Ltd')[0])}</td><td class="mono">${i.amount}</td><td class="mono">${i.fin.due}</td>
+        <td>${i.fin.overdue>0?`<span class="chip red">Overdue ${i.fin.overdue}d</span>`:i.status==='pending'?'<span class="chip amber">In processing</span>':'<span class="chip teal">Due — scheduled</span>'}</td></tr>`).join('')}
+      ${invs.filter(i=>i.fin.paid).map(i=>`<tr class="row" onclick="openDoc('${i.id}')"><td class="mono">${i.id}</td><td>${esc(i.party.split(' Ltd')[0])}</td><td class="mono">${i.amount}</td><td class="mono">${i.fin.due}</td><td><span class="chip grey">Paid ✓</span></td></tr>`).join('')}
+      </tbody></table>
+    </div>
+    <div class="card">
+      <div style="padding:12px 14px;border-bottom:1px solid var(--line)"><b>Shipments — pending & dispatched</b></div>
+      <table><thead><tr><th>SN</th><th>Consignee</th><th>Qty</th><th>Status</th></tr></thead><tbody>
+      ${ships.map(s2=>`<tr class="row" onclick="openDoc('${s2.id}')"><td class="mono">${s2.id}</td><td>${esc(s2.ship.consignee.split(',')[0])}</td><td class="mono">${s2.ship.qty}</td>
+        <td>${s2.ship.pending?(s2.status==='exception'?'<span class="chip red">Blocked</span>':'<span class="chip amber">Pending</span>'):'<span class="chip teal">Dispatched</span>'}</td></tr>`).join('')}
+      </tbody></table>
+      <div style="padding:11px 14px;font-size:11.5px;color:var(--muted)">${pend.length} pending: ${pend.map(s2=>esc(s2.ship.note)).join(' · ')}</div>
+    </div>
+  </div>`;
+}
+function opsTab(){
+  const byFunc={};state.docs.forEach(d=>byFunc[d.func]=(byFunc[d.func]||0)+1);
+  const max=Math.max(...Object.values(byFunc));
+  return `
+  <div class="grid" style="grid-template-columns:repeat(4,1fr);margin-bottom:16px">
+   ${[['Events logged',state.audit.length],['Corrections',state.audit.filter(a=>a.action==='Field corrected').length],['Posted to targets',state.docs.filter(d=>d.status==='approved').length],['Avg. cycle time','3.4 hrs']].map(s=>`<div class="card stat"><div class="n">${s[1]}</div><div class="l">${s[0]}</div></div>`).join('')}</div>
+  <div class="grid" style="grid-template-columns:1.7fr 1fr;align-items:start">
+    <div class="card"><table><thead><tr><th>Time</th><th>Document</th><th>Action</th><th>Detail</th><th>By</th></tr></thead>
+    <tbody>${state.audit.map(a=>`<tr><td class="mono">${a.ts}</td><td class="mono"><a href="#" style="color:var(--blue)" onclick="openDoc('${a.docId}');return false">${a.docId}</a></td><td><b>${esc(a.action)}</b></td><td style="color:var(--muted);font-size:12.5px">${esc(a.detail)}</td><td>${esc(a.by)}</td></tr>`).join('')}</tbody></table></div>
+    <div class="card" style="padding:16px">
+      <div class="section-title">Volume by function</div>
+      ${Object.entries(byFunc).map(([t,n])=>`<div class="bar-h"><span class="lbl">${t}</span><span class="trk"><i style="width:${n/max*100}%"></i></span><span class="v">${n}</span></div>`).join('')}
+      <div class="section-title" style="margin-top:18px">Target systems</div>
+      ${['SAP FI/MM','HRMS','WMS','MES','LIMS','DMS'].map((t,i)=>`<div class="bar-h"><span class="lbl">${t}</span><span class="trk"><i style="width:${[70,55,45,30,15,95][i]}%;background:var(--teal)"></i></span><span class="v">${[7,5,4,3,1,12][i]}</span></div>`).join('')}
+    </div>
+  </div>`;
+}
+
+/* ============ PROCESS STUDIO — multi-process, fully configurable ============ */
+const WSTEPS=['Configure Process','Define Template','Define Fields','Validation Rules','Approval Route','Target System','Test','Publish'];
+function newProcess(){
+  state.processes.push(proc('P-NEW-'+(state.processes.length+1),'New process','Finance','',['Email'],tpl('',0),[],[],[],TARGETS[0],false,false));
+  state.processes[state.processes.length-1].templates=[];
+  state.selProc=state.processes.length-1;state.ownerStep=0;render();toast('Draft process created — configure each step, then test & publish');
+}
+function renderStudio(){
+  const o=state.processes[state.selProc];const s=state.ownerStep;
+  $('topbar').innerHTML=`<h1>Process Studio</h1><span class="sub">Configure any function × any document type: HR PAN/Aadhaar, Logistics gate pass, Manufacturing BMR → MES, Finance invoices…</span>
+   ${o.published?'<span class="chip teal" style="margin-left:auto">Published</span>':'<span class="chip grey" style="margin-left:auto">Draft</span>'}`;
+  $('content').innerHTML=`
+  <div class="grid" style="grid-template-columns:270px 1fr;align-items:start">
+    <div class="card">
+      <div style="padding:12px 14px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center"><b>Processes</b><button class="btn blue sm" onclick="newProcess()">+ New</button></div>
+      ${state.processes.map((p,i)=>`<div class="proc-item ${i===state.selProc?'sel':''}" onclick="state.selProc=${i};state.ownerStep=0;render()">
+        <div><b style="font-size:12.5px">${esc(p.name)}</b><div style="font-size:11px;color:var(--muted)">${p.func} · ${esc(p.docType||'type not set')}</div></div>
+        ${p.published?'<span class="chip teal" style="font-size:9.5px">Live</span>':'<span class="chip grey" style="font-size:9.5px">Draft</span>'}</div>`).join('')}
+    </div>
+    <div>
+      <div class="wiz">${WSTEPS.map((w,i)=>`<button class="${i===s?'active':i<s?'done':''}" onclick="state.ownerStep=${i};render()"><span class="n">STEP ${i+1}</span><b>${i<s?'✓ ':''}${w}</b></button>`).join('')}</div>
+      ${studioStep(o,s)}
+      <div style="margin-top:20px;display:flex;gap:10px">
+        <button class="btn" ${s===0?'disabled':''} onclick="state.ownerStep--;render()">← Back</button>
+        <button class="btn blue" ${s===WSTEPS.length-1?'disabled':''} onclick="state.ownerStep++;render()">Next →</button>
+      </div>
+    </div>
+  </div>`;
+}
+function studioStep(o,s){
+  if(s===0)return `
+   <div class="grid" style="grid-template-columns:1fr 1fr;max-width:800px">
+    <div><label>Process name</label><input value="${esc(o.name)}" onchange="cur().name=this.value;render()"></div>
+    <div><label>Business function</label><select onchange="cur().func=this.value;render()">${FUNCS.map(x=>`<option ${o.func===x?'selected':''}>${x}</option>`).join('')}</select></div>
+    <div><label>Document type (free text — anything: PAN Card, Gate Pass, BMR, COA…)</label><input value="${esc(o.docType)}" placeholder="e.g. Aadhaar Card / Shipping Note / BMR" onchange="cur().docType=this.value;render()"></div>
+    <div><label>Intake channels (comma separated)</label><input value="${esc(o.channels.join(', '))}" onchange="cur().channels=this.value.split(',').map(x=>x.trim())"></div>
+   </div>
+   <p style="margin-top:14px;color:var(--muted);max-width:720px">One process = one document type in one function, with its own template, fields, rules, route and target. HR's PAN reader, Logistics' gate pass and Manufacturing's BMR→MES are simply three different processes on the same engine.</p>`;
+  if(s===1)return `
+   <div class="grid" style="grid-template-columns:repeat(auto-fill,minmax(220px,1fr));max-width:960px">
+    ${o.templates.map((t,i)=>`<div class="card" style="padding:14px;cursor:pointer;border-color:${o.template===t?'var(--blue)':'var(--line)'}" onclick="cur().template=cur().templates[${i}];render()">
+      <div style="font-size:24px">${typeIcon(o.docType)||'📄'}</div><b>${esc(t.name)}</b>
+      <div style="color:var(--muted);font-size:12px;margin-top:3px">${t.samples} sample(s) learned ${o.template===t?'· ✓ selected':''}</div>
+      <button class="btn ghost sm" onclick="event.stopPropagation();cur().templates[${i}].samples+=5;render();toast('5 samples uploaded — layout model updated')">⬆ Upload samples</button></div>`).join('')||'<div class="empty card">No templates yet — create one below.</div>'}
+   </div>
+   <div class="addform" style="max-width:640px">
+    <b>Create new template</b>
+    <div class="fr" style="grid-template-columns:2fr 1fr;margin-top:8px">
+      <div><label>Template name</label><input id="tplname" placeholder="e.g. ${esc(o.docType||'document')} — scanned copy layout"></div>
+      <div><label>Seed samples</label><select id="tplsamples"><option>0</option><option>5</option><option selected>10</option><option>25</option></select></div>
+    </div>
+    <button class="btn primary sm" onclick="addTemplate()">+ Create template</button>
+    <div style="font-size:11.5px;color:var(--muted);margin-top:8px">Upload 5–10 real samples per layout variant (photo vs scan vs digital PDF); the AI learns anchors, then generalises to unseen layouts.</div>
+   </div>`;
+  if(s===2)return `
+   <div class="card" style="max-width:900px"><table><thead><tr><th>Field</th><th>Type / Source</th><th>Master mapping</th><th>Mandatory</th><th></th></tr></thead><tbody>
+    ${o.fields.map((fl,i)=>`<tr><td><b>${esc(fl.name)}</b></td><td>${esc(fl.type)}</td>
+      <td>${fl.master?`<span class="chip violet">${esc(fl.master[0])} · ${esc(fl.master[1])}</span>`:'<span style="color:var(--muted)">—</span>'}</td>
+      <td>${fl.mandatory?'<span class="chip amber">Required</span>':'<span class="chip grey">Optional</span>'}</td>
+      <td><button class="btn ghost sm" onclick="cur().fields.splice(${i},1);render()">Remove</button></td></tr>`).join('')||'<tr><td colspan="5" class="empty">No fields yet — define what the AI should read from this document.</td></tr>'}
+   </tbody></table></div>
+   <div class="addform" style="max-width:900px">
+    <b>Add field</b>
+    <div class="fr" style="grid-template-columns:1.4fr 1fr 1.2fr 1fr auto;align-items:end;margin-top:8px">
+      <div><label>Field name</label><input id="fldname" placeholder="e.g. Batch No / Vehicle No / PAN Number"></div>
+      <div><label>Data type</label><select id="fldtype">${['Text','Number','Currency','Date','Date range','Regex','Masked number','Master lookup'].map(x=>`<option>${x}</option>`).join('')}</select></div>
+      <div><label>Map to master (optional)</label><select id="fldmaster"><option value="">— none —</option>${state.masters.flatMap(mm=>mm.cols.map(c=>`<option value="${esc(mm.name)}|${esc(c)}">${esc(mm.name)} · ${esc(c)}</option>`)).join('')}</select></div>
+      <div><label>Mandatory</label><select id="fldman"><option>Yes</option><option>No</option></select></div>
+      <button class="btn primary sm" onclick="addFld()">+ Add</button>
+    </div>
+    <div style="font-size:11.5px;color:var(--muted)">Mapping a field to a master makes extraction validate + auto-complete against that master (e.g. Batch No → Batch Master, Transporter → Transporter Master).</div>
+   </div>`;
+  if(s===3)return `
+   <div style="max-width:900px">
+    ${o.rules.map((r,i)=>`<div class="rulecard"><div><b>${esc(r.name)}</b><div style="color:var(--muted);font-size:12px">${esc(r.type)} — ${esc(r.cond)}</div></div>
+      <span class="chip ${r.action==='Block'?'red':r.action==='Exception'?'amber':'grey'}">${r.action} on fail</span>
+      <button class="btn ghost sm" onclick="cur().rules.splice(${i},1);render()">Remove</button></div>`).join('')||'<div class="empty card">No validation rules yet.</div>'}
+    <div class="addform">
+      <b>Add validation rule</b>
+      <div class="fr" style="grid-template-columns:1.2fr 1.3fr;margin-top:8px">
+        <div><label>Rule name</label><input id="rlname" placeholder="e.g. Yield within spec / GSTIN active"></div>
+        <div><label>Check type</label><select id="rltype">${CHECKTYPES.map(x=>`<option>${x}</option>`).join('')}</select></div>
+      </div>
+      <div class="fr" style="grid-template-columns:2fr 1fr auto;align-items:end">
+        <div><label>Condition / expression</label><input id="rlcond" placeholder="e.g. Yield between 92 and 102% of Batch Master.Std Yield"></div>
+        <div><label>On fail</label><select id="rlact"><option>Block</option><option selected>Exception</option><option>Warn</option></select></div>
+        <button class="btn primary sm" onclick="addRl()">+ Add rule</button>
+      </div>
+      <div style="font-size:11.5px;color:var(--muted)">Rules run in order after extraction. <b>Block</b> stops the flow, <b>Exception</b> queues for human review, <b>Warn</b> annotates only. Master-lookup rules use the mappings from Masters & Mapping.</div>
+    </div>
+   </div>`;
+  if(s===4)return `
+   <div style="max-width:900px">
+    ${o.route.map((r,i)=>`<div class="rulecard"><div><b>When ${esc(r.cond)}</b><div style="color:var(--muted);font-size:12px">Route: ${esc(r.path)}</div></div>
+      <button class="btn ghost sm" onclick="cur().route.splice(${i},1);render()">Remove</button></div>`).join('')||'<div class="empty card">No routing rules yet.</div>'}
+    <div class="addform">
+      <b>Add routing rule</b>
+      <div class="fr" style="grid-template-columns:1.2fr 1.6fr auto;align-items:end;margin-top:8px">
+        <div><label>Condition</label><input id="rtcond" placeholder="e.g. Amount > ₹25,00,000 / Deviation count > 0"></div>
+        <div><label>Route path (→ separated)</label><input id="rtpath" placeholder="e.g. Production Officer → QA Release → Plant Head"></div>
+        <button class="btn primary sm" onclick="addRt()">+ Add</button>
+      </div>
+      <div style="font-size:11.5px;color:var(--muted)">Evaluated top-down, first match wins. Steps can be roles (Finance Manager), functions (QA), or named users, with SLA escalation.</div>
+    </div>
+   </div>`;
+  if(s===5)return `
+   <div class="grid" style="grid-template-columns:repeat(auto-fill,minmax(230px,1fr));max-width:980px">
+    ${TARGETS.map(t=>`<div class="card" style="padding:14px;cursor:pointer;border-color:${o.target===t?'var(--blue)':'var(--line)'}" onclick="cur().target='${t}';render()">
+     <b>${t.split('—')[0]}</b><div style="color:var(--muted);font-size:12px;margin-top:3px">${o.target===t?'✓ Selected · connector healthy':'Connector available'}</div></div>`).join('')}
+   </div>
+   <p style="margin-top:14px;color:var(--muted);max-width:760px">On final approval, structured fields post to the target (SAP via BAPI/OData, MES/LIMS/WMS/HRMS via API) and the original file + extraction JSON + full audit trail archive to DMS with the retention policy of this process.</p>`;
+  if(s===6)return `
+   <div class="card" style="max-width:780px;padding:18px">
+    <b>Sandbox test run — ${esc(o.name)}</b>
+    <p style="color:var(--muted);margin:6px 0 14px">Replays historical ${esc(o.docType||'documents')} through this draft config without posting to ${esc(o.target)}.</p>
+    ${o.tested?`
+      <div class="valrow pass"><span class="vic">✓</span><div><b>Extraction</b><small>${o.fields.length} field(s) read on sample set · avg confidence 92%</small></div></div>
+      <div class="valrow pass"><span class="vic">✓</span><div><b>Validation rules</b><small>${o.rules.length} rule(s) fired correctly, expected exceptions raised</small></div></div>
+      <div class="valrow pass"><span class="vic">✓</span><div><b>Routing</b><small>${o.route.length} rule(s) routed to correct approvers</small></div></div>
+      <div class="valrow pass"><span class="vic">✓</span><div><b>Target posting (dry-run)</b><small>${esc(o.target)} simulation returned 0 errors</small></div></div>`
+    :`<button class="btn blue" ${o.fields.length&&o.rules.length&&o.route.length?'':'disabled'} onclick="cur().tested=true;toast('Sandbox run complete — all checks passed');render()">▶ Run sandbox test</button>
+      ${o.fields.length&&o.rules.length&&o.route.length?'':'<div style="color:var(--amber);font-size:12px;margin-top:8px">Define at least one field, one rule and one route before testing.</div>'}`}
+   </div>`;
+  return `
+   <div class="card" style="max-width:780px;padding:18px">
+    <b>Ready to publish — ${esc(o.name)}</b>
+    <table style="margin:12px 0"><tbody>
+     ${[['Function × type',o.func+' × '+(o.docType||'—')],['Channels',o.channels.join(', ')],['Template',(o.template&&o.template.name)||'—'],['Fields',o.fields.length+' ('+o.fields.filter(x=>x.mandatory).length+' mandatory, '+o.fields.filter(x=>x.master).length+' master-mapped)'],['Validation rules',o.rules.length],['Routing rules',o.route.length],['Target',o.target],['Sandbox test',o.tested?'Passed ✓':'Not run ✗']].map(r=>`<tr><td style="color:var(--muted);width:170px">${r[0]}</td><td><b>${esc(String(r[1]))}</b></td></tr>`).join('')}
+    </tbody></table>
+    ${o.published?'<span class="chip teal">Published — live for new inbound documents</span>'
+     :`<button class="btn primary" ${o.tested?'':'disabled'} onclick="cur().published=true;log(cur().id,'Process published',cur().name+' v1.0 live','Owner');toast('Published — v1.0 live');render()">🚀 Publish v1.0</button>
+      ${o.tested?'':'<div style="color:var(--amber);font-size:12px;margin-top:8px">Run the sandbox test before publishing.</div>'}`}
+   </div>`;
+}
+function cur(){return state.processes[state.selProc]}
+function addTemplate(){const n=$('tplname').value.trim();if(!n){toast('Enter a template name');return}
+  cur().templates.push(tpl(n,+$('tplsamples').value));cur().template=cur().templates[cur().templates.length-1];
+  log(cur().id,'Template created',n,'Owner');render();toast('Template "'+n+'" created and selected')}
+function addFld(){const n=$('fldname').value.trim();if(!n){toast('Enter a field name');return}
+  const mv=$('fldmaster').value;cur().fields.push(pf(n,$('fldtype').value,$('fldman').value==='Yes',mv?mv.split('|'):null));
+  render();toast('Field "'+n+'" added'+(mv?' with master mapping':''))}
+function addRl(){const n=$('rlname').value.trim();if(!n){toast('Enter a rule name');return}
+  cur().rules.push(pr(n,$('rltype').value,$('rlcond').value||'—',$('rlact').value));render();toast('Rule "'+n+'" added')}
+function addRt(){const c=$('rtcond').value.trim(),p2=$('rtpath').value.trim();if(!c||!p2){toast('Enter condition and route path');return}
+  cur().route.push(rt(c,p2));render();toast('Routing rule added')}
+
+/* ============ MASTERS & MAPPING ============ */
+function renderMasters(){
+  $('topbar').innerHTML=`<h1>Masters & Mapping</h1><span class="sub">Reference data the AI validates against, and how document fields map to it</span>`;
+  const tab=state.mastersTab;
+  $('content').innerHTML=`
+   <div class="tabs"><button class="${tab===0?'on':''}" onclick="state.mastersTab=0;render()">🗂️ Connected masters</button>
+   <button class="${tab===1?'on':''}" onclick="state.mastersTab=1;render()">🔗 Field ↔ master mapping</button>
+   <button class="${tab===2?'on':''}" onclick="state.mastersTab=2;render()">🔁 Translation layer (X → Y)</button></div>
+   ${tab===0?mastersTab():tab===1?mappingTab():translationTab()}`;
+}
+function mastersTab(){
+  const mm=state.masters[state.selMaster];
+  const q=(state.masterQ||'').toLowerCase();
+  const rows=mm.rows.map((r,ri)=>[r,ri]).filter(([r])=>!q||r.some(c=>String(c).toLowerCase().includes(q)));
+  const usedBy=state.processes.filter(p=>p.fields.some(fl=>fl.master&&fl.master[0]===mm.name));
+  return `<div class="grid" style="grid-template-columns:280px 1fr;align-items:start">
+   <div>
+    <div class="card" style="margin-bottom:14px">
+      <div style="padding:11px 14px;border-bottom:1px solid var(--line)"><b>Master tables</b></div>
+      ${state.masters.map((x,i)=>`<div class="proc-item ${i===state.selMaster?'sel':''}" onclick="state.selMaster=${i};state.masterQ='';render()"><div><b style="font-size:12.5px">${esc(x.name)}</b><div style="font-size:11px;color:var(--muted)">${x.rows.length} record(s) · ${x.cols.length} column(s)</div><div style="margin-top:3px"><span class="chip ${x.src&&x.src.mode.includes('Live')?'teal':x.src&&x.src.mode.includes('Owner')?'violet':'grey'}" style="font-size:9.5px">${x.src?esc(x.src.sys)+' · '+esc(x.src.mode):'Local'}</span></div></div></div>`).join('')}
+    </div>
+    <div class="addform">
+      <b>Create new master</b>
+      <div class="fr" style="margin-top:8px">
+        <div><label>Master name</label><input id="mstname" placeholder="e.g. Cost Centre Master"></div>
+        <div><label>Columns (comma separated)</label><input id="mstcols" placeholder="Code, Description, Owner"></div>
+      </div>
+      <button class="btn primary sm" onclick="addMaster()">+ Create master</button>
+    </div>
+   </div>
+   <div>
+    <div class="card" style="margin-bottom:14px">
+      <div style="padding:12px 14px;border-bottom:1px solid var(--line);display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+        <div><b style="font-size:14px">${esc(mm.name)}</b>
+          <div style="font-size:11.5px;color:var(--muted)">Reference data the AI validates & auto-completes against · ${usedBy.length?'used by: '+usedBy.map(p=>esc(p.name)).join(', '):'not yet mapped to any process'}</div></div>
+        <span class="chip ${mm.src&&mm.src.mode.includes('Live')?'teal':'grey'}" style="margin-left:auto">${mm.src?'Source: '+esc(mm.src.sys)+' · '+esc(mm.src.mode):'Local table'}</span>
+        <input placeholder="🔍 Search records…" value="${esc(state.masterQ||'')}" oninput="state.masterQ=this.value;render()" style="max-width:200px;padding:6px 10px;font-size:12px">
+      </div>
+      <table><thead><tr><th style="width:36px">#</th>${mm.cols.map(c=>`<th>${esc(c)}</th>`).join('')}<th style="width:80px"></th></tr></thead><tbody>
+       ${rows.map(([r,ri])=>`<tr><td class="mono" style="color:var(--muted)">${ri+1}</td>${r.map(cell=>`<td>${esc(cell)}</td>`).join('')}<td><button class="btn ghost sm" onclick="state.masters[${state.selMaster}].rows.splice(${ri},1);render()">Remove</button></td></tr>`).join('')||`<tr><td colspan="${mm.cols.length+2}" class="empty">${q?'No records match "'+esc(q)+'".':'No records yet — add the first one below.'}</td></tr>`}
+      </tbody></table>
+    </div>
+    <div class="addform">
+      <b>Add record to ${esc(mm.name)}</b>
+      <div class="fr" style="grid-template-columns:repeat(${Math.min(mm.cols.length,4)},1fr);margin-top:8px">
+        ${mm.cols.map((c,ci)=>`<div><label>${esc(c)}</label><input id="newcell${ci}" placeholder="${esc(c)}"></div>`).join('')}
+      </div>
+      <button class="btn primary sm" onclick="addRow()">+ Add record</button>
+    </div>
+   </div></div>`;
+}
+function mappingTab(){
+  return `<div class="card" style="max-width:1000px"><table>
+   <thead><tr><th>Process</th><th>Document field</th><th>Mapped master · column</th><th>Used by rules</th></tr></thead><tbody>
+   ${state.processes.flatMap(p=>p.fields.map((fl,fi)=>`<tr>
+     <td><b style="font-size:12px">${esc(p.name)}</b><br><small style="color:var(--muted)">${p.func} · ${esc(p.docType)}</small></td>
+     <td>${esc(fl.name)}</td>
+     <td><select style="max-width:280px;padding:5px 8px;font-size:12px" onchange="mapField('${p.id}',${fi},this.value)">
+       <option value="">— not mapped —</option>
+       ${state.masters.flatMap(mm=>mm.cols.map(c=>{const val=mm.name+'|'+c;const sel=fl.master&&fl.master[0]===mm.name&&fl.master[1]===c;return `<option value="${esc(val)}" ${sel?'selected':''}>${esc(mm.name)} · ${esc(c)}</option>`})).join('')}
+     </select></td>
+     <td>${p.rules.filter(r=>r.type==='Master data lookup').length?`<span class="chip violet">${p.rules.filter(r=>r.type==='Master data lookup').length} lookup rule(s)</span>`:'<span style="color:var(--muted)">—</span>'}</td>
+   </tr>`)).join('')}
+  </tbody></table></div>
+  <p style="margin-top:12px;color:var(--muted);max-width:800px">A mapped field is validated (and auto-corrected within edit distance) against the master at extraction time — e.g. Transporter name against Transporter Master, Batch No against Batch Master, employee name on a PAN card against Employee Master.</p>`;
+}
+function addMaster(){const n=$('mstname').value.trim(),c=$('mstcols').value.trim();if(!n||!c){toast('Enter master name and columns');return}
+  state.masters.push({name:n,src:{sys:'Local',mode:'Owner maintained'},cols:c.split(',').map(x=>x.trim()).filter(Boolean),rows:[]});state.selMaster=state.masters.length-1;
+  log('MASTER','Master created',n,'Owner');render();toast('Master "'+n+'" created — add records, or connect it to a source system')}
+/* --- X → Y semantic translation layer --- */
+function translationTab(){
+  const dm=state.masters.find(x=>x.name==='Drug Synonym Master');
+  return `
+  <div class="card" style="max-width:1000px;padding:16px;margin-bottom:14px">
+    <b>How the translation layer works</b>
+    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:10px;font-size:12.5px">
+      <span class="chip amber" style="padding:8px 14px">X — as received<br>"Dolo 650" · "Calpol" · vendor part no.</span><b>→</b>
+      <span class="chip violet" style="padding:8px 14px">Canonical<br>Paracetamol 650 mg · internal code</span><b>→</b>
+      <span class="chip teal" style="padding:8px 14px">Y — as target needs<br>HIMS: MED-PARA-650 · SAP: MM-40120</span>
+    </div>
+    <div style="font-size:12px;color:var(--muted);margin-top:10px">Every sender writes the same thing differently; every target system wants its own code. Audree normalizes X to one canonical value, then emits it per target — same engine works for drugs, materials, part numbers, test names, city/port aliases.</div>
+  </div>
+  <div class="card" style="max-width:1000px">
+    <div style="padding:12px 14px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center"><b>Drug Synonym Master — active translation table</b><span class="chip violet">Owner maintained · fuzzy match ≥ 92%</span></div>
+    <table><thead><tr><th>Incoming alias (X)</th><th>Canonical</th><th>→ HIMS</th><th>→ SAP MM</th><th></th></tr></thead><tbody>
+    ${dm.rows.map((r,ri)=>`<tr><td><b>${esc(r[0])}</b></td><td><span class="chip violet">${esc(r[1])}</span></td><td class="mono">${esc(r[2])}</td><td class="mono">${esc(r[3])}</td>
+      <td><button class="btn ghost sm" onclick="state.masters[${state.masters.indexOf(dm)}].rows.splice(${ri},1);render()">Remove</button></td></tr>`).join('')}
+    </tbody></table>
+    <div class="addform" style="margin:14px">
+      <b>Add translation</b>
+      <div class="fr" style="grid-template-columns:1fr 1fr 1fr 1fr auto;align-items:end;margin-top:8px">
+        <div><label>Alias (X)</label><input id="tr0" placeholder="e.g. PCM 650"></div>
+        <div><label>Canonical</label><input id="tr1" placeholder="Paracetamol 650 mg"></div>
+        <div><label>HIMS code</label><input id="tr2" placeholder="MED-PARA-650"></div>
+        <div><label>SAP MM code</label><input id="tr3" placeholder="MM-40120"></div>
+        <button class="btn primary sm" onclick="addTrans()">+ Add</button>
+      </div>
+      <div style="font-size:11.5px;color:var(--muted)">Unmapped aliases raise an exception with AI-suggested canonical matches; approving the suggestion adds the row here automatically.</div>
+    </div>
+  </div>`;
+}
+function addTrans(){const dm=state.masters.find(x=>x.name==='Drug Synonym Master');
+  const row=[0,1,2,3].map(i=>$('tr'+i).value.trim());if(!row[0]||!row[1]){toast('Alias and canonical are required');return}
+  dm.rows.push(row);log('MASTER','Translation added',row[0]+' → '+row[1],'Owner');render();toast('Translation added — live immediately')}
+function addRow(){const mm=state.masters[state.selMaster];const row=mm.cols.map((c,ci)=>$('newcell'+ci).value.trim());
+  if(row.every(x=>!x)){toast('Enter at least one value');return}
+  mm.rows.push(row);log('MASTER','Record added',mm.name+': '+row.join(' · '),'Owner');render();toast('Record added to '+mm.name)}
+function mapField(pid,fi,val){const p=procById(pid);p.fields[fi].master=val?val.split('|'):null;
+  log(pid,'Mapping updated',p.fields[fi].name+(val?' → '+val.replace('|',' · '):' unmapped'),'Owner');toast('Mapping saved')}
+
+/* ============ LIVE EXTRACTION (real photo → real Gemini vision call) ============ */
+function getApiKey(){try{return localStorage.getItem('audree_gemini_key')||''}catch(e){return ''}}
+function setApiKey(k){try{localStorage.setItem('audree_gemini_key',k)}catch(e){}}
+function getGmailClientId(){try{return localStorage.getItem('audree_gmail_client_id')||''}catch(e){return ''}}
+function setGmailClientId(k){try{localStorage.setItem('audree_gmail_client_id',k)}catch(e){}}
+
+function openSettings(){
+  const key=getApiKey();
+  const gClient=getGmailClientId();
+  showModal('AI Settings',`
+   <p style="color:var(--muted);font-size:13px;margin-bottom:12px">Live Extract lets Audree's AI reading engine process a real document you upload, right in this demo. Your key stays in this browser only — it is never sent anywhere except the AI provider's API.</p>
+   <label>AI engine API key</label>
+   <input id="settingsKey" type="password" value="${key.replace(/"/g,'')}" placeholder="Paste your free API key">
+   <div style="font-size:12px;color:var(--muted);margin-top:8px;margin-bottom:18px">Don't have one? <a href="https://aistudio.google.com/apikey" target="_blank" style="color:var(--blue)">Get a free key here</a> — no credit card needed. (Powered by Google AI Studio under the hood.)</div>
+   <div style="border-top:1px solid var(--line);padding-top:16px">
+     <label>Gmail OAuth Client ID (for real Gmail sending)</label>
+     <input id="settingsGClient" value="${gClient.replace(/"/g,'')}" placeholder="xxxxxxxx.apps.googleusercontent.com">
+     <div style="font-size:12px;color:var(--muted);margin-top:8px">One-time setup in Google Cloud Console (free): create an OAuth Client ID, add this page's URL as an authorized origin, add your own Gmail as a test user, grant the gmail.send scope. Ask Veerai for the step-by-step if needed.</div>
+   </div>
+  `,[
+   {label:'Cancel',cls:'btn'},
+   {label:'Save',cls:'btn primary',action:()=>{setApiKey($('settingsKey').value.trim());setGmailClientId($('settingsGClient').value.trim());closeModal();toast('Settings saved in this browser')}}
+  ]);
+}
+
+function openLiveUpload(){
+  if(!getApiKey()){openSettings();return}
+  showModal('📷 Live Extract — upload a real document',`
+   <div class="dropzone" id="dz" onclick="document.getElementById('liveFileInput').click()">
+     <div style="font-size:32px;margin-bottom:8px">📤</div>
+     <b>Click to upload a photo or PDF</b>
+     <div style="font-size:12px;margin-top:4px">A real PAN card, Aadhaar, invoice — anything. Processed live by Veerai, nothing pre-scripted.</div>
+     <input type="file" id="liveFileInput" accept="image/*,.pdf" style="display:none" onchange="handleLiveFile(this.files[0])">
+   </div>
+   <div id="liveResult"></div>
+  `,[{label:'Close',cls:'btn'}]);
+  const dz=$('dz');
+  ['dragover','dragleave','drop'].forEach(ev=>dz.addEventListener(ev,e=>{e.preventDefault();dz.classList.toggle('drag',ev==='dragover')}));
+  dz.addEventListener('drop',e=>{if(e.dataTransfer.files[0])handleLiveFile(e.dataTransfer.files[0])});
+}
+
+function showModal(title,bodyHtml,buttons){
+  closeModal();
+  const bd=document.createElement('div');bd.className='modal-backdrop';bd.id='activeModal';
+  bd.innerHTML=`<div class="modal"><div class="mhead"><h3>${title}</h3><button class="btn ghost" style="padding:2px 8px" onclick="closeModal()">✕</button></div>
+   <div class="mbody">${bodyHtml}</div>
+   <div class="mfoot" id="modalFoot"></div></div>`;
+  document.body.appendChild(bd);
+  bd.addEventListener('click',e=>{if(e.target===bd)closeModal()});
+  const foot=$('modalFoot');
+  buttons.forEach(b=>{const btn=document.createElement('button');btn.className=b.cls;btn.textContent=b.label;btn.onclick=b.action||closeModal;foot.appendChild(btn)});
+}
+function closeModal(){const m=$('activeModal');if(m)m.remove()}
+
+async function handleLiveFile(file){
+  if(!file)return;
+  if(!getApiKey()){
+    $('liveResult').innerHTML=`<div style="color:var(--red);padding:14px;background:var(--red-bg);border-radius:8px;font-size:13px"><b>No API key set.</b> Open ⚙️ Settings and paste your free key first — it didn't seem to save last time. Try pasting it, clicking Save, then reopening Settings to confirm it still shows.</div>`;
+    return;
+  }
+  const isPdf=file.type==='application/pdf';
+  const reader=new FileReader();
+  reader.onload=async()=>{
+    const base64=reader.result.split(',')[1];
+    $('liveResult').innerHTML=`
+     ${isPdf?'<div style="text-align:center;color:var(--muted);margin-bottom:10px">📄 '+esc(file.name)+'</div>':`<img class="extract-preview" src="${reader.result}">`}
+     <div class="spinner"></div>
+     <div style="text-align:center;color:var(--muted);font-size:13px">Veerai is reading the document…</div>`;
+    try{
+      const fields=await extractWithGemini(base64,file.type);
+      renderLiveResult(fields,reader.result,file.name,isPdf);
+    }catch(err){
+      const isFileProtocol=window.location.protocol==='file:';
+      const isNetworkFail=err instanceof TypeError && /fetch/i.test(err.message);
+      let hint='Check that your API key (⚙️ settings) is valid and has quota remaining.';
+      if(isNetworkFail && isFileProtocol){
+        hint=`<b>Likely cause:</b> you opened this file directly from disk (file://…). Google's API blocks requests from local files for security. <b>Fix:</b> host this file on a real URL — drag it onto <a href="https://app.netlify.com/drop" target="_blank" style="color:var(--blue)">app.netlify.com/drop</a> (free, 30 seconds) and open it from the URL it gives you instead of double-clicking the file.`;
+      }else if(isNetworkFail){
+        hint='This looks like a network/CORS-level failure rather than an API error — check your internet connection, and confirm this page is loaded from a real https:// URL rather than a local file.';
+      }
+      $('liveResult').innerHTML=`<div style="color:var(--red);padding:14px;background:var(--red-bg);border-radius:8px;font-size:13px"><b>Extraction failed:</b> ${esc(err.message)}<br><br>${hint}</div>`;
+    }
+  };
+  reader.readAsDataURL(file);
+}
+
+async function extractWithGemini(base64,mimeType){
+  const key=getApiKey();
+  if(!key)throw new Error('No API key configured');
+  const prompt=`You are a document data extraction engine. Look at this image/document and identify what type of document it is (e.g. PAN Card, Aadhaar Card, Invoice, Gate Pass, etc). Then extract every meaningful field you can see (names, ID numbers, dates, amounts, addresses, etc).
+Respond with ONLY valid JSON, no markdown, no code fences, in exactly this shape:
+{"documentType":"...", "party":"short label for whose document this is", "fields":[{"name":"...", "value":"...", "confidence": <integer 0-100 reflecting how legible/certain this field is>}]}
+If a field is partially obscured, masked, or hard to read, give it a lower confidence (below 75) rather than guessing confidently. Mask/redact any full unmasked national ID number in your "value" output down to last 4 digits for privacy, even if you can read it fully (e.g. show "XXXX XXXX 8813" not the full number).`;
+  const modelsToTry=['gemini-3.6-flash','gemini-2.0-flash','gemini-1.5-flash'];
+  let resp,lastErr;
+  for(const model of modelsToTry){
+    try{
+      resp=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(key)}`,{
+        method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({contents:[{parts:[{text:prompt},{inline_data:{mime_type:mimeType||'image/jpeg',data:base64}}]}]})
+      });
+    }catch(networkErr){
+      throw networkErr; // propagate TypeError("Failed to fetch") as-is so the caller can detect it specifically
+    }
+    if(resp.ok)break;
+    lastErr=await resp.text();
+    if(resp.status!==404)break; // only fall through to next model on "model not found/retired"
+  }
+  if(!resp.ok){throw new Error('API error '+resp.status+': '+(lastErr||'').slice(0,200))}
+  const data=await resp.json();
+  const text=data.candidates?.[0]?.content?.parts?.[0]?.text;
+  if(!text)throw new Error('No response from model');
+  const clean=text.replace(/```json|```/g,'').trim();
+  return JSON.parse(clean);
+}
+
+function renderLiveResult(result,dataUrl,fileName,isPdf){
+  window._pendingLiveDoc={result,fileName,isPdf};
+  const avg=Math.round(result.fields.reduce((s,f)=>s+f.confidence,0)/result.fields.length)||0;
+  $('liveResult').innerHTML=`
+   ${isPdf?'':`<img class="extract-preview" src="${dataUrl}">`}
+   <div style="text-align:center;margin-bottom:10px">
+     <span class="chip blue">${esc(result.documentType||'Document')}</span>
+     <span class="chip ${avg>=90?'teal':avg>=75?'amber':'red'}">Avg confidence ${avg}%</span>
+   </div>
+   <div class="card" style="padding:4px 14px;margin-bottom:14px">
+     ${result.fields.map(f=>`<div class="livefield"><span>${esc(f.name)}</span>${confHtml(f.confidence)}</div><div class="livefield" style="border-bottom:1px solid #F3F5F7;padding-top:0"><b>${esc(f.value)}</b></div>`).join('')}
+   </div>
+   <button class="btn primary" style="width:100%;margin-bottom:10px" onclick="addLiveDocument()">➕ Add to Inbox as a live document</button>
+   <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px">
+     <input id="emailDest" value="sj.audree@gmail.com" placeholder="destination email" style="flex:1">
+   </div>
+   <div style="display:flex;gap:8px;margin-bottom:6px">
+     <button class="btn" style="flex:1" onclick="emailExtractedData()">✉️ Open in email app</button>
+     <button class="btn blue" style="flex:1" onclick="sendViaGmailAPI()">📨 Send via Gmail (real)</button>
+   </div>
+   <div style="font-size:11px;color:var(--muted);text-align:center;margin-top:8px">This was extracted live by Veerai — not pre-scripted demo data. "Open in email app" pre-fills a draft you send yourself. "Send via Gmail" actually sends it through your own authorized Gmail account (one-time Google sign-in), with your explicit consent each time.</div>`;
+}
+
+function buildEmailContent(p){
+  const subject=`Veerai extraction — ${p.result.documentType||'Document'} (${p.result.party||p.fileName})`;
+  const avg=Math.round(p.result.fields.reduce((s,f)=>s+(f.confidence||0),0)/p.result.fields.length)||0;
+  const lowConf=p.result.fields.filter(f=>(f.confidence||0)<75).map(f=>f.name);
+  const bodyLines=[
+    `Extracted from: ${p.fileName}`,
+    `Document type: ${p.result.documentType||'—'}`,
+    `Party: ${p.result.party||'—'}`,
+    '',
+    ...p.result.fields.map(f=>`${f.name}: ${f.value}`),
+    '',
+    `Extraction confidence: ${avg}% average${lowConf.length?' — please double-check: '+lowConf.join(', '):' — all fields high-confidence'}`,
+    '',
+    '— Sent from the Audree live demo.',
+  ];
+  return {subject,body:bodyLines.join('\n')};
+}
+
+/* ---- Real Gmail send via OAuth (Google Identity Services token flow) ---- */
+let _gmailTokenClient=null;
+function sendViaGmailAPI(){
+  const p=window._pendingLiveDoc;
+  if(!p){toast('Nothing to send — extract a document first');return}
+  const to=($('emailDest').value||'').trim();
+  if(!to){toast('Enter a destination email address');return}
+  const clientId=getGmailClientId();
+  if(!clientId){toast('Add a Gmail OAuth Client ID in ⚙️ Settings first');openSettings();return}
+  if(typeof google==='undefined'||!google.accounts){toast('Google sign-in library still loading — try again in a second');return}
+  try{
+    _gmailTokenClient=google.accounts.oauth2.initTokenClient({
+      client_id:clientId,
+      scope:'https://www.googleapis.com/auth/gmail.send',
+      callback:(resp)=>{
+        if(resp.error){toast('Google sign-in failed: '+resp.error);return}
+        actuallySendGmail(resp.access_token,to,p);
+      }
+    });
+    _gmailTokenClient.requestAccessToken();
+  }catch(e){
+    toast('Gmail sign-in error: '+e.message);
+  }
+}
+
+async function actuallySendGmail(accessToken,to,p){
+  toast('Sending via your Gmail account…');
+  const {subject,body}=buildEmailContent(p);
+  const raw=[
+    `To: ${to}`,
+    `Subject: ${subject}`,
+    'Content-Type: text/plain; charset=utf-8',
+    '',
+    body
+  ].join('\r\n');
+  const encoded=btoa(unescape(encodeURIComponent(raw))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+  try{
+    const resp=await fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages/send',{
+      method:'POST',
+      headers:{'Authorization':'Bearer '+accessToken,'Content-Type':'application/json'},
+      body:JSON.stringify({raw:encoded})
+    });
+    if(!resp.ok){const t=await resp.text();throw new Error(t.slice(0,200))}
+    log('LIVE-EMAIL','Gmail sent','Real email sent to '+to+' via Gmail API','You (live demo)');
+    toast('✅ Sent for real via your Gmail account to '+to);
+  }catch(e){
+    toast('Gmail send failed: '+e.message);
+  }
+}
+
+function emailExtractedData(){
+  const p=window._pendingLiveDoc;
+  if(!p){toast('Nothing to email — extract a document first');return}
+  const to=($('emailDest').value||'').trim();
+  if(!to){toast('Enter a destination email address');return}
+  const {subject,body}=buildEmailContent(p);
+  const mailto=`mailto:${encodeURIComponent(to)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+  window.location.href=mailto;
+  log('LIVE-EMAIL','Email draft opened','Extracted data from '+p.fileName+' drafted to '+to,'You (live demo)');
+  toast('Opening your email app with the extracted data pre-filled…');
+}
+
+/* ---- Email/Gmail actions from the Document Workspace, for ANY document (not just right after extraction) ---- */
+function docToEmailPayload(d){
+  return {
+    fileName:d.attachment?d.attachment.name:d.id,
+    result:{
+      documentType:d.type,
+      party:d.party,
+      fields:d.fields.map(f=>({name:f.name,value:f.value,confidence:f.conf}))
+    }
+  };
+}
+function emailDocumentData(docId){
+  const d=state.docs.find(x=>x.id===docId);
+  if(!d){toast('Document not found');return}
+  const to=($('docEmailDest').value||'').trim();
+  if(!to){toast('Enter a destination email address');return}
+  const {subject,body}=buildEmailContent(docToEmailPayload(d));
+  const mailto=`mailto:${encodeURIComponent(to)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+  window.location.href=mailto;
+  log(docId,'Email draft opened','Extracted data drafted to '+to,'You');
+  toast('Opening your email app with the extracted data pre-filled…');
+}
+function sendDocumentViaGmail(docId){
+  const d=state.docs.find(x=>x.id===docId);
+  if(!d){toast('Document not found');return}
+  const to=($('docEmailDest').value||'').trim();
+  if(!to){toast('Enter a destination email address');return}
+  const clientId=getGmailClientId();
+  if(!clientId){toast('Add a Gmail OAuth Client ID in ⚙️ Settings first');openSettings();return}
+  if(typeof google==='undefined'||!google.accounts){toast('Google sign-in library still loading — try again in a second');return}
+  const p=docToEmailPayload(d);
+  try{
+    _gmailTokenClient=google.accounts.oauth2.initTokenClient({
+      client_id:clientId,
+      scope:'https://www.googleapis.com/auth/gmail.send',
+      callback:(resp)=>{
+        if(resp.error){toast('Google sign-in failed: '+resp.error);return}
+        actuallySendGmail(resp.access_token,to,p).then(()=>log(docId,'Gmail sent','Real email sent to '+to+' via Gmail API','You'));
+      }
+    });
+    _gmailTokenClient.requestAccessToken();
+  }catch(e){
+    toast('Gmail sign-in error: '+e.message);
+  }
+}
+
+let liveDocCounter=1;
+function addLiveDocument(){
+  if(!window._pendingLiveDoc){toast('Nothing to add — extract a document first');return}
+  const {result,fileName,isPdf}=window._pendingLiveDoc;
+  const id='LIVE-'+String(liveDocCounter++).padStart(3,'0');
+  const avg=Math.round(result.fields.reduce((s,f)=>s+f.confidence,0)/result.fields.length)||0;
+  const newDoc={
+    id,procId:'P-LIVE',func:'Live Demo',type:result.documentType||'Document',party:result.party||'Live upload',
+    channel:'Live Upload',status:avg<80?'exception':'pending',amount:'—',received:new Date().toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}),
+    attachment:{kind:isPdf?'pdf':'image',name:fileName,pages:1},
+    fields:result.fields.map(f=>({name:f.name,value:f.value,conf:f.confidence,edited:false})),
+    checks:[{s:avg>=85?'pass':'warn',name:'Live extraction quality',detail:'Average field confidence '+avg+'% from a real, unscripted document'}],
+    route:['Reviewer','Approve'],routePos:0,
+    chat:[{who:'You (live demo)',text:'Uploaded live during demo — genuinely extracted by Veerai, not pre-loaded data.',att:{kind:isPdf?'pdf':'image',name:fileName},tm:'now'}],
+  };
+  if(!state.processes.find(p=>p.id==='P-LIVE'))state.processes.push({id:'P-LIVE',name:'Live Demo Upload',func:'Live Demo',docType:'Any',target:'Demo only — not posted anywhere',fields:[],rules:[],route:[]});
+  state.docs.unshift(newDoc);
+  window._pendingLiveDoc=null;
+  closeModal();
+  toast('Live document added to Inbox — open '+id+' to review');
+  openDoc(id);
+}
+
+/* ============ RENDER ============ */
+function render(){renderNav();({inbox:renderInbox,doc:renderDocView,audit:renderAudit,studio:renderStudio,masters:renderMasters}[state.view]||renderInbox)()}
+render();
+</script>
+</body>
+</html>
