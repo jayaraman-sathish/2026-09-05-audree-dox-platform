@@ -114,7 +114,7 @@ label{font-size:11.5px;font-weight:600;color:var(--muted);display:block;margin-b
 .fieldrow.err input{border-color:var(--red);background:#FFF7F6}
 .valrow{display:flex;gap:10px;padding:9px 14px;border-bottom:1px solid #EDF1F5;font-size:12.5px;align-items:flex-start}
 .valrow .vic{width:18px;height:18px;border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;font-size:11px;color:#fff;margin-top:1px}
-.valrow.pass .vic{background:var(--teal)}.valrow.fail .vic{background:var(--red)}.valrow.warn .vic{background:var(--amber)}
+.valrow.pass .vic{background:var(--teal)}.valrow.fail .vic{background:var(--red)}.valrow.warn .vic{background:var(--amber)}.valrow.pending .vic{background:var(--blue)}.valrow.pending{opacity:.85}
 .valrow small{color:var(--muted);display:block}
 .actionbar{display:flex;gap:9px;flex-wrap:wrap;padding:14px;border-top:1px solid var(--line);background:#FAFBFC;border-radius:0 0 var(--radius) var(--radius)}
 .route-step{display:flex;gap:12px;padding:10px 14px;border-bottom:1px solid #EDF1F5;font-size:12.5px}
@@ -481,6 +481,7 @@ function renderDocView(){
     <h1>${typeIcon(d.type)} ${d.id} — ${esc(d.party)}</h1>${statusChip(d.status)}
     <span class="chip blue">Process: ${esc(p.name)}</span>`;
   const fails=d.checks.filter(c=>c.s==='fail').length,warns=d.checks.filter(c=>c.s==='warn').length;
+  const coreChecks=computeCoreInvoiceChecks(d);
   $('content').innerHTML=`
   <div class="card pipe" style="margin-bottom:16px">${PIPE.map((pp,i)=>`
    <span class="st ${i<stage?'done':i===stage?'now':''}"><span class="ic">${i<stage?'✓':i+1}</span>${pp}</span>${i<PIPE.length-1?`<span class="ln ${i<stage?'done':''}"></span>`:''}`).join('')}</div>
@@ -514,6 +515,10 @@ function renderDocView(){
       </div>
       <div class="section-title">Validation — ${fails?`<span style="color:var(--red)">${fails} failed</span> · `:''}${warns?`<span style="color:var(--amber)">${warns} warning</span> · `:''}${d.checks.filter(c=>c.s==='pass').length} passed</div>
       <div class="card" style="margin-bottom:16px">${d.checks.map(c=>`<div class="valrow ${c.s}"><span class="vic">${c.s==='pass'?'✓':c.s==='fail'?'✕':'!'}</span><div><b>${esc(c.name)}</b><small>${esc(c.detail)}</small></div></div>`).join('')}</div>
+      ${coreChecks.length?`
+      <div class="section-title">Core invoice rules — computed live, right now <span class="chip blue" style="font-size:9.5px;margin-left:6px">not scripted</span></div>
+      <div class="card" style="margin-bottom:16px">${coreChecks.map(c=>`<div class="valrow ${c.s}"><span class="vic">${c.s==='pass'?'✓':c.s==='fail'?'✕':c.s==='pending'?'⏳':'!'}</span><div><b>${esc(c.name)}</b><small>${esc(c.detail)}</small></div></div>`).join('')}
+      <div style="padding:9px 14px;font-size:11px;color:var(--muted)">These three re-evaluate every time this screen renders, using whatever the fields currently say and whatever invoices are currently loaded — edit the Invoice Number above to a duplicate and watch this section change. "SAP PO validation" is intentionally shown as pending rather than faked; it requires the live SAP OData connection to actually mean anything.</div></div>`:''}
       <div class="section-title">Approval route → target: <b>${esc(p.target)}</b></div>
       <div class="card">
         ${d.route.map((r,i)=>`<div class="route-step ${i<d.routePos?'done':i===d.routePos&&d.status==='routing'?'now':''}"><span class="rdot"></span><div><b>${esc(r)}</b>${i<d.routePos?'<small style="color:var(--teal);display:block">Completed</small>':i===d.routePos&&d.status==='routing'?'<small style="color:var(--blue);display:block">Awaiting action</small>':''}</div></div>`).join('')}
@@ -589,6 +594,71 @@ function emailPanel(d){
     <div style="display:flex;gap:8px;margin-top:10px"><input id="wain" placeholder="Reply to thread…" onkeydown="if(event.key==='Enter')waSend('${d.id}')"><button class="btn blue" onclick="waSend('${d.id}')">Send</button></div></div>`;
 }
 function editField(id,i,val){const d=state.docs.find(x=>x.id===id);d.fields[i].value=val;d.fields[i].edited=true;d.fields[i].conf=Math.max(d.fields[i].conf,99);log(id,'Field corrected',`${d.fields[i].name} → "${val}"`);toast('Correction captured — will feed model retraining')}
+
+/* ============ REAL, LIVE-COMPUTED CORE INVOICE VALIDATION ============
+   Unlike the rest of the seeded "checks" arrays (which are pre-written illustrative text),
+   these three run genuinely, every time the document is rendered, against whatever the
+   fields currently say — including live edits and live-extracted documents. PO validation
+   against SAP cannot be made real client-side; it is shown honestly as pending until the
+   live SAP OData connection exists (see Process Studio → Target System). */
+function fieldVal(d,name){const f=d.fields.find(x=>x.name.toLowerCase()===name.toLowerCase());return f?f.value.trim():''}
+function parseFlexibleDate(s){
+  if(!s)return null;
+  const cleaned=s.trim();
+  let m=cleaned.match(/^(\d{1,2})[-\/\s]([A-Za-z]{3,9}|\d{1,2})[-\/\s](\d{2,4})$/);
+  let d;
+  if(m){
+    const day=+m[1]; const yr=m[3].length===2?2000+ +m[3]:+m[3];
+    const monStr=m[2]; let mon;
+    if(/^\d+$/.test(monStr)) mon=+monStr-1;
+    else { const months=['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec']; mon=months.indexOf(monStr.slice(0,3).toLowerCase()); }
+    if(mon<0||mon>11)return null;
+    d=new Date(yr,mon,day);
+    if(d.getFullYear()!==yr||d.getMonth()!==mon||d.getDate()!==day)return null;
+    return d;
+  }
+  const native=new Date(cleaned);
+  return isNaN(native.getTime())?null:native;
+}
+function computeCoreInvoiceChecks(d){
+  if(d.type!=='Invoice')return [];
+  const out=[];
+  // 1. Invoice Number — mandatory + REAL duplicate check against every other loaded invoice
+  const invNo=fieldVal(d,'Invoice No')||fieldVal(d,'Invoice Number');
+  if(!invNo){
+    out.push({s:'fail',name:'Invoice Number — mandatory',detail:'Field is empty. Invoice Number is required and cannot be posted without it.'});
+  }else{
+    const dupes=state.docs.filter(o=>o.id!==d.id && o.type==='Invoice' && (fieldVal(o,'Invoice No')||fieldVal(o,'Invoice Number'))===invNo);
+    if(dupes.length){
+      out.push({s:'fail',name:'Invoice Number — duplicate check (live)',detail:`"${invNo}" also exists on ${dupes.map(x=>x.id).join(', ')} — computed live against ${state.docs.filter(o=>o.type==='Invoice').length} invoices currently loaded, not a scripted result.`});
+    }else{
+      out.push({s:'pass',name:'Invoice Number — duplicate check (live)',detail:`"${invNo}" is unique across ${state.docs.filter(o=>o.type==='Invoice').length} invoices currently loaded.`});
+    }
+  }
+  // 2. Invoice Date — mandatory + REAL date parse/validity check
+  const invDate=fieldVal(d,'Invoice Date');
+  if(!invDate){
+    out.push({s:'fail',name:'Invoice Date — mandatory',detail:'Field is empty. Invoice Date is required.'});
+  }else{
+    const parsed=parseFlexibleDate(invDate);
+    if(!parsed){
+      out.push({s:'fail',name:'Invoice Date — valid date (live)',detail:`"${invDate}" does not parse as a real calendar date.`});
+    }else{
+      const future=parsed.getTime()>Date.now()+86400000;
+      out.push({s:future?'warn':'pass',name:'Invoice Date — valid date (live)',detail:future?`Parses to ${parsed.toDateString()}, which is in the future — check for a typo.`:`Parses correctly to ${parsed.toDateString()}.`});
+    }
+  }
+  // 3. PO Number — mandatory (real) + SAP validation (honestly pending, not faked)
+  const po=fieldVal(d,'PO Reference')||fieldVal(d,'PO Number');
+  if(!po || po==='—'){
+    out.push({s:d.sapMatch&&!d.sapMatch.poNo?'pass':'fail',name:'PO Number — mandatory',detail:d.sapMatch&&!d.sapMatch.poNo?'No PO required for this invoice type ('+d.sapMatch.docType+').':'Field is empty and this invoice type requires a PO.'});
+  }else{
+    out.push({s:'pass',name:'PO Number — mandatory',detail:`"${po}" present.`});
+    out.push({s:'pending',name:'PO Number — SAP PO validation',detail:`Not yet verifiable: this demo has no live SAP OData connection configured. Once connected (see Process Studio → Target System), this will call SAP in real time to confirm PO "${po}" exists, is open, and is not fully invoiced.`});
+  }
+  return out;
+}
+
 function act(id,kind){
   const d=state.docs.find(x=>x.id===id);const p=procById(d.procId);
   if(kind==='approve'){
