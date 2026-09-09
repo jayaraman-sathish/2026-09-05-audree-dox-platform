@@ -20,7 +20,15 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--paper);color:var(
 h1,h2,h3,.brand{font-family:'Sora',sans-serif}
 button{font:inherit;cursor:pointer;border:none;background:none}
 .app{display:flex;height:100vh;overflow:hidden}
-.sidebar{width:230px;min-width:230px;background:var(--ink);color:#C6D2E0;display:flex;flex-direction:column}
+.sidebar{width:230px;min-width:230px;background:var(--ink);color:#C6D2E0;display:flex;flex-direction:column;transition:width .15s,min-width .15s}
+.sidebar.collapsed{width:64px;min-width:64px}
+.sidebar.collapsed .brand small,.sidebar.collapsed .nav span.t,.sidebar.collapsed .user,.sidebar.collapsed .nav .group{display:none}
+.sidebar.collapsed .brand{justify-content:center;font-size:0}
+.sidebar.collapsed .brand .dot{width:16px;height:16px}
+.sidebar.collapsed .nav button{justify-content:center}
+.sidebar.collapsed .nav .badge{position:absolute;top:2px;right:2px;transform:scale(.8)}
+.collapse-btn{background:var(--ink-2);border:none;color:#C6D2E0;width:100%;padding:9px 0;font-size:13px;cursor:pointer;border-top:1px solid #24344D}
+.collapse-btn:hover{color:#fff}
 .brand{padding:20px 18px 14px;color:#fff;font-size:19px;font-weight:700;display:flex;align-items:center;gap:9px}
 .brand .dot{width:10px;height:10px;border-radius:3px;background:linear-gradient(135deg,#3D7BFF,#0E7C66)}
 .brand small{font-family:'Inter';font-size:10px;font-weight:500;color:#7E93AC;display:block;letter-spacing:1.4px;text-transform:uppercase}
@@ -149,7 +157,7 @@ label{font-size:11.5px;font-weight:600;color:var(--muted);display:block;margin-b
 .tabs button{padding:7px 14px;border-radius:8px;font-size:12.5px;font-weight:600;border:1px solid var(--line);background:#fff;color:var(--muted)}
 .tabs button.on{background:var(--ink);color:#fff;border-color:var(--ink)}
 .empty{padding:40px;text-align:center;color:var(--muted)}
-@media(max-width:1000px){.detail{grid-template-columns:1fr}.sidebar{width:64px;min-width:64px}.sidebar .brand small,.sidebar .nav span.t,.sidebar .user,.nav .group{display:none}.brand{justify-content:center;font-size:0}.brand .dot{width:16px;height:16px}}
+@media(max-width:1000px){.detail{grid-template-columns:1fr}}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 .modal-backdrop{position:fixed;inset:0;background:rgba(15,27,45,.55);z-index:200;display:flex;align-items:center;justify-content:center;padding:20px}
 .modal{background:#fff;border-radius:14px;max-width:520px;width:100%;max-height:88vh;overflow:auto;box-shadow:0 20px 60px rgba(0,0,0,.3)}
@@ -164,15 +172,23 @@ label{font-size:11.5px;font-weight:600;color:var(--muted);display:block;margin-b
 @keyframes spin{to{transform:rotate(360deg)}}
 .livefield{display:flex;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px solid #EDF1F5;font-size:13px}
 .livefield b{color:var(--ink)}
+.demo-notes{margin-top:28px;border-top:2px dashed #C9D3DE;padding-top:14px}
+.demo-notes .dn-head{display:flex;align-items:center;gap:8px;font-size:10.5px;letter-spacing:1.2px;text-transform:uppercase;color:var(--muted);font-weight:600;margin-bottom:8px;cursor:pointer;user-select:none}
+.demo-notes .dn-head .tag{background:#EDF1F5;color:var(--muted);border-radius:4px;padding:1px 7px;font-size:10px;letter-spacing:.6px}
+.demo-notes ul{margin:0;padding-left:18px;color:var(--muted);font-size:12px;line-height:1.55}
+.demo-notes li{margin-bottom:5px}
+.demo-notes li b{color:var(--text)}
+.demo-notes.collapsed ul{display:none}
 </style>
 
 </head>
 <body>
 <div class="app">
-  <aside class="sidebar">
+  <aside class="sidebar" id="sidebar">
     <div class="brand"><span class="dot"></span><span>Audree<small>AI Business Platform</small></span></div>
     <nav class="nav" id="nav"></nav>
     <div class="user"><b>Priya Nair</b>Shared Services · Reviewer + Owner</div>
+    <button class="collapse-btn" id="collapseBtn" onclick="toggleSidebar()" title="Collapse/expand sidebar">◂</button>
   </aside>
   <div class="main">
     <div class="topbar" id="topbar"></div>
@@ -390,15 +406,63 @@ state.docs=[
   sn('SN-9990','Apex Pharma Distributors, Nagpur','800 units','Sree Kaveri Logistics','pending','Awaiting vehicle placement — planned 09-Jul','06-Jul-2026'),
   sn('SN-9995','Medisphere Ltd, Pune','2,400 units','BlueDart Surface','exception','Stock short by 150 units — batch VX-2217 not yet released','07-Jul-2026'),
 ];
+
+/* ============ CROSS-SESSION PERSISTENCE ============
+   Everything above is the default seed data. If the browser has a saved snapshot
+   (from a previous visit in this same browser), it overrides the seed data below.
+   This is browser-local only — not shared across devices or users, and not a real
+   database — but it means uploads, corrections and approvals survive a page reload. */
+const STORAGE_KEY='audree_state_snapshot_v1';
+function saveState(){
+  try{
+    localStorage.setItem(STORAGE_KEY,JSON.stringify({docs:state.docs,audit:state.audit,processes:state.processes,masters:state.masters}));
+  }catch(e){
+    if(!window._storageWarned){
+      window._storageWarned=true;
+      toast('Browser storage is full — this session still works, but new uploads may not survive a page refresh. Consider Settings \u2192 Reset demo data.');
+    }
+  }
+}
+function loadPersistedState(){
+  try{
+    const raw=localStorage.getItem(STORAGE_KEY);
+    if(!raw)return false;
+    const snap=JSON.parse(raw);
+    if(snap.docs)state.docs=snap.docs;
+    if(snap.audit)state.audit=snap.audit;
+    if(snap.processes)state.processes=snap.processes;
+    if(snap.masters)state.masters=snap.masters;
+    return true;
+  }catch(e){ return false; }
+}
+function resetDemoData(){
+  try{localStorage.removeItem(STORAGE_KEY)}catch(e){}
+  toast('Demo data reset \u2014 reloading\u2026');
+  setTimeout(()=>window.location.reload(),600);
+}
+loadPersistedState();
+
 /* compact builders for analytic seed docs (still fully openable) */
 function inv(id,party,amount,val,month,invDate,due,paid,overdue,status,invNo,po){
+  const isFreight=/freight|logistic|courier|transport/i.test(party);
+  const docType=isFreight?'Freight / Logistics Invoice':'Material PO Invoice';
+  const hasPO=po&&po!=='\u2014';
   return {id,procId:'P-FIN-01',func:'Finance',type:'Invoice',party,channel:'Email',status,amount,received:invDate,
    fin:{month,invDate,due,val,paid,overdue},attachment:{kind:'pdf',name:id+'.pdf',pages:1},
-   fields:[f('Invoice No',invNo,98),f('Invoice Date',invDate,97),f('PO Reference',po,93),f('Total Amount',amount,96),f('Due Date',due,95)],
+   fields:[f('Vendor Name',party,97),f('Invoice No',invNo,98),f('Invoice Date',invDate,97),f('PO Reference',hasPO?po:'',hasPO?93:0),f('Total Amount',amount,96),f('Due Date',due,95)],
    checks:[v('pass','Duplicate check','No match in 365 days'),v('pass','GSTIN active','Verified'),v('pass','Mandatory fields','Complete')],
-   route:['AP Desk','Finance Manager (>₹2L)','Post to SAP FI (MIRO)'],routePos:status==='approved'?3:0,
+   route:['AP Desk','Finance Manager (>\u20b92L)','Post to SAP FI (MIRO)'],routePos:status==='approved'?3:0,
+   sapMatch:{docType,matchBasis:isFreight?'PO based (no GR \u2014 service line)':'PO + GR based',matchType:isFreight?'2-way':'3-way',
+     vendor:party,vendorCode:'1'+String(Math.abs(hash(party))%900+100).padStart(5,'0'),poNo:hasPO?po:null,poStatus:hasPO?(status==='approved'?'Closed \u2014 fully invoiced':'Open'):'Not applicable',
+     companyCode:'1000',plant:isFreight?'\u2014  (service PO, no plant)':'1100 \u2014 Sri City',paymentTerms:'NET30',
+     lines:[{item:'10',material:isFreight?'Freight services':'Material supply per '+(po||'invoice'),
+       po:hasPO?{qty:1,uom:'AU',rate:val,value:val}:null,
+       gr:hasPO&&!isFreight?{qty:1,uom:'AU',docNo:'50001'+String(Math.abs(hash(id))%90000+10000),date:invDate}:null,
+       inv:{qty:1,uom:'AU',rate:val,value:val}}],
+     exceptions:[]},
    chat:[m(party.split(' ')[0]+' AP','Invoice '+invNo+' attached for processing.',{kind:'pdf',name:id+'.pdf'})]};
 }
+function hash(str){let h=0;for(let k=0;k<str.length;k++){h=((h<<5)-h)+str.charCodeAt(k);h|=0}return h}
 function sn(id,consignee,qty,carrier,status,note,received){
   return {id,procId:'P-LOG-02',func:'Logistics',type:'Shipping Note',party:'Dispatch — Consignee: '+consignee.split(',')[0],channel:'Email',status,amount:'—',received,
    ship:{consignee,qty,carrier,note,pending:status!=='approved'},attachment:{kind:'pdf',name:id+'.pdf',pages:1},
@@ -416,11 +480,29 @@ function log(docId,action,detail,by='Priya Nair'){const d=new Date();state.audit
 function statusChip(s){return{pending:'<span class="chip amber">Needs review</span>',exception:'<span class="chip red">Exception</span>',approved:'<span class="chip teal">Approved · Posted</span>',rejected:'<span class="chip red">Rejected</span>',clarify:'<span class="chip violet">Awaiting clarification</span>',routing:'<span class="chip blue">In approval</span>'}[s]||s}
 function confHtml(c){const cls=c>=90?'hi':c>=75?'md':'lo';return `<span class="conf ${cls}"><span class="bar"><i style="width:${c}%"></i></span>${c}%</span>`}
 function typeIcon(t){return{'Invoice':'🧾','PAN Card':'🪪','Aadhaar Card':'🪪','Gate Pass':'🚚','Shipping Note':'📦','BMR':'🏭','Contract':'📜','COA':'🧪','OPD Sheet':'🏥'}[t]||'📄'}
+/* Demo notes: every screen ends with a clearly-separated, collapsible explanatory panel so the working UI stays clean. */
+function demoNotes(items){
+  return `<div class="demo-notes ${state.demoNotesCollapsed?'collapsed':''}" id="demoNotes">
+    <div class="dn-head" onclick="state.demoNotesCollapsed=!state.demoNotesCollapsed;render()"><span class="tag">DEMO NOTES</span> How this screen works <span style="margin-left:auto">${state.demoNotesCollapsed?'▸ show':'▾ hide'}</span></div>
+    <ul>${items.map(x=>`<li>${x}</li>`).join('')}</ul>
+  </div>`;
+}
 function attIcon(k){return k==='image'?'🖼️':'📄'}
 function procById(id){return state.processes.find(p=>p.id===id)}
 
 /* ============ NAV ============ */
 const NAV=[['group','Operations'],['inbox','📥','Document Inbox'],['sapap','🧾','SAP AP Automation'],['audit','🛡️','Audit & Analytics'],['group','Application Owner'],['studio','⚙️','Process Studio'],['masters','🗂️','Masters & Mapping']];
+function toggleSidebar(){
+  const collapsed=!document.getElementById('sidebar').classList.contains('collapsed');
+  document.getElementById('sidebar').classList.toggle('collapsed',collapsed);
+  document.getElementById('collapseBtn').textContent=collapsed?'▸':'◂';
+  try{localStorage.setItem('audree_sidebar_collapsed',collapsed?'1':'0')}catch(e){}
+}
+function initSidebar(){
+  let collapsed=false;
+  try{collapsed=localStorage.getItem('audree_sidebar_collapsed')==='1'}catch(e){}
+  if(collapsed){document.getElementById('sidebar').classList.add('collapsed');document.getElementById('collapseBtn').textContent='▸'}
+}
 function renderNav(){
   const pend=state.docs.filter(d=>['pending','exception'].includes(d.status)).length;
   $('nav').innerHTML=NAV.map(n=>n[0]==='group'?`<div class="group">${n[1]}</div>`:
@@ -468,7 +550,7 @@ function renderInbox(){
         <td><span class="chip ${d.channel==='WhatsApp'?'teal':'grey'}">${d.channel}</span><br><small class="mono" style="color:var(--muted)">${attIcon(d.attachment.kind)} ${d.attachment.kind.toUpperCase()}</small></td>
         <td class="mono">${d.amount}</td><td>${confHtml(avg)}</td><td>${statusChip(d.status)}</td>
       </tr>`}).join('')||'<tr><td colspan="7" class="empty">No documents match these filters.</td></tr>'}
-    </tbody></table></div>`;
+    </tbody></table></div>${demoNotes(['<b>Every inbound document lands here</b> — email, WhatsApp, portal, SFTP, scan station or Live Extract — auto-classified to a published process. Filter by business function, document type, status or channel.','<b>Invoices go to SAP AP Automation</b> (left menu) where they are classified by business type, extracted against that type template, matched with SAP and parked/posted. Non-invoice documents (PAN, Aadhaar, gate pass, BMR, OPD sheet) follow their own process routes.','<b>Live Extract</b> (top right) reads a real document you upload: it classifies first, then extracts only the configured template fields. Invoices route straight into the SAP AP pipeline.','<b>Confidence</b> is the per-document average; any field under 75% is flagged for review inside the document.'])}`;
 }
 
 /* ============ DOCUMENT DETAIL ============ */
@@ -500,7 +582,7 @@ function renderDocView(){
           <input value="${esc(fl.value)}" onchange="editField('${d.id}',${i},this.value)" ${d.status==='approved'?'disabled':''}>
           ${confHtml(fl.conf)}
         </div>`).join('')}
-        <div style="padding:9px 14px;font-size:11.5px;color:var(--muted)">Fields under 75% are flagged. Corrections feed model retraining for this process's template.</div>
+        
       </div>
       ${sapMatchPanel(d)}
       <div class="section-title">Send this data by email</div>
@@ -516,9 +598,9 @@ function renderDocView(){
       <div class="section-title">Validation — ${fails?`<span style="color:var(--red)">${fails} failed</span> · `:''}${warns?`<span style="color:var(--amber)">${warns} warning</span> · `:''}${d.checks.filter(c=>c.s==='pass').length} passed</div>
       <div class="card" style="margin-bottom:16px">${d.checks.map(c=>`<div class="valrow ${c.s}"><span class="vic">${c.s==='pass'?'✓':c.s==='fail'?'✕':'!'}</span><div><b>${esc(c.name)}</b><small>${esc(c.detail)}</small></div></div>`).join('')}</div>
       ${coreChecks.length?`
-      <div class="section-title">Core invoice rules — computed live, right now <span class="chip blue" style="font-size:9.5px;margin-left:6px">not scripted</span></div>
+      <div class="section-title">Rule engine — live checks <span class="chip blue" style="font-size:9.5px;margin-left:6px">real-time</span></div>
       <div class="card" style="margin-bottom:16px">${coreChecks.map(c=>`<div class="valrow ${c.s}"><span class="vic">${c.s==='pass'?'✓':c.s==='fail'?'✕':c.s==='pending'?'⏳':'!'}</span><div><b>${esc(c.name)}</b><small>${esc(c.detail)}</small></div></div>`).join('')}
-      <div style="padding:9px 14px;font-size:11px;color:var(--muted)">These three re-evaluate every time this screen renders, using whatever the fields currently say and whatever invoices are currently loaded — edit the Invoice Number above to a duplicate and watch this section change. "SAP PO validation" is intentionally shown as pending rather than faked; it requires the live SAP OData connection to actually mean anything.</div></div>`:''}
+      </div>`:''}
       <div class="section-title">Approval route → target: <b>${esc(p.target)}</b></div>
       <div class="card">
         ${d.route.map((r,i)=>`<div class="route-step ${i<d.routePos?'done':i===d.routePos&&d.status==='routing'?'now':''}"><span class="rdot"></span><div><b>${esc(r)}</b>${i<d.routePos?'<small style="color:var(--teal);display:block">Completed</small>':i===d.routePos&&d.status==='routing'?'<small style="color:var(--blue);display:block">Awaiting action</small>':''}</div></div>`).join('')}
@@ -533,14 +615,33 @@ function renderDocView(){
         </div>
       </div>
     </div>
-  </div>`;
+  </div>
+  ${demoNotes([
+    '<b>Left:</b> the document exactly as received (PDF viewer or phone photo). Switch to the <b>AI-read layer</b> to see each detected zone with its confidence colour (green \u226590%, amber 75\u201389%, red below 75%). Below it, the full source thread \u2014 you can message the sender from here.',
+    '<b>Right:</b> the extracted fields. Fields under 75% are flagged red; any edit you make is captured as a correction and feeds model retraining for this template.',
+    '<b>Validation</b> shows the process rules. The <b>Rule engine \u2014 live checks</b> block re-evaluates every time this screen renders (edit the Invoice Number to a duplicate and watch it flip). \"SAP PO validation\" is shown as pending, not faked, until the live SAP connection exists.',
+    '<b>SAP match</b> (invoices only) compares PO / GR-or-SES / Invoice per line and lists named exceptions with exact deltas; a newly received invoice legitimately shows <i>Awaiting GR</i> until the warehouse posts receipt.',
+    '<b>Actions:</b> Approve advances the route step by step; Reject notifies the sender; Clarify sends a query over the source channel; Park/Post to SAP happens only after the final approval.'
+  ])}`;
 }
 /* --- original doc: PDF frame vs WhatsApp photo --- */
 function originalView(d){
   const tab=state.docTab||'original';
+  const hasReal=!!(d.attachment&&d.attachment.dataUrl);
   const tabs=`<div class="viewtabs">
     <button class="${tab==='original'?'on':''}" onclick="state.docTab='original';render()">${d.attachment.kind==='image'?'📷 Photo (as received)':'📄 PDF (as received)'}</button>
     <button class="${tab==='parsed'?'on':''}" onclick="state.docTab='parsed';render()">🔍 AI-read layer</button></div>`;
+  /* --- REAL uploaded file, when we actually have the bytes (Live Extract / Gmail import) --- */
+  if(tab==='original' && hasReal){
+    if(d.attachment.kind==='image'){
+      return tabs+`<div class="photowrap"><div class="photo" style="padding:0;background:none;box-shadow:none;transform:none;width:100%">
+        <img src="${d.attachment.dataUrl}" style="width:100%;border-radius:8px;box-shadow:0 10px 22px rgba(0,0,0,.35)">
+        <div style="margin-top:8px;font-size:10px;color:var(--muted);text-align:center">📷 ${esc(d.attachment.name)} · genuine uploaded file, not a reconstruction</div>
+      </div></div>`;
+    }
+    return tabs+`<div class="pdfframe"><div class="pdfbar"><span>${esc(d.attachment.name)}</span><span>Genuine file ✓</span></div>
+      <iframe src="${d.attachment.dataUrl}" style="width:100%;height:520px;border:none;background:#fff"></iframe></div>`;
+  }
   /* --- AI-READ LAYER: detected zones + confidence, works for PDF and photo --- */
   if(tab==='parsed'){
     const avg=Math.round(d.fields.reduce((s,x)=>s+x.conf,0)/d.fields.length);
@@ -553,9 +654,10 @@ function originalView(d){
         </div>
         <div style="font-size:13px;font-weight:600;margin-top:2px"><span class="${fl.conf<90?'hl':''}">${esc(fl.value)}</span></div>
       </div>`).join('')}
-      <div style="font-size:10.5px;color:var(--muted);margin-top:6px">Dashed boxes mirror the bounding boxes on the source ${d.attachment.kind==='image'?'photo (after de-skew)':'PDF'}. Green ≥90% · amber 75–89% · red &lt;75% needs review.</div>
+      <div style="font-size:10.5px;color:var(--muted);margin-top:6px">Dashed boxes mirror the bounding boxes on the source ${d.attachment.kind==='image'?'photo (after de-skew)':'PDF'}. Green ≥90% · amber 75–89% · red &lt;75% needs review. ${hasReal?'Zones are shown over the genuine uploaded file — see the as-received tab.':'This is seeded demo data; the source file itself is illustrative, not a genuine scan.'}</div>
      </div></div>`;
   }
+  if(!hasReal){
   const rows=d.fields.map(fl=>`<tr><td style="color:var(--muted);padding:5px 8px;font-size:11.5px">${esc(fl.name)}</td><td style="padding:5px 8px">${esc(fl.value)}</td></tr>`).join('');
   const body=`<div class="dochead"><div><b style="font-family:'Sora';font-size:14px">${esc(d.party.split('(')[0])}</b><br><small style="color:var(--muted)">${d.type.toUpperCase()}</small></div><div class="mono" style="font-weight:600">${d.id}</div></div><table>${rows}</table>`;
   if(d.attachment.kind==='image')
@@ -563,6 +665,7 @@ function originalView(d){
       <div style="margin-top:8px;font-size:10px;color:var(--muted)">📷 ${esc(d.attachment.name)} · received via ${d.channel} · auto de-skewed & enhanced by AI</div></div></div>`;
   return tabs+`<div class="pdfframe"><div class="pdfbar"><span>${esc(d.attachment.name)}</span><span>Page 1 / ${d.attachment.pages} · SHA-256 ✓</span></div>
     <div class="pdfpage">${body}<div style="margin-top:10px;padding-top:8px;border-top:1px dashed var(--line);font-size:10px;color:var(--muted)">${d.attachment.pages>1?`+ ${d.attachment.pages-1} more page(s) — AI scanned all pages`:'Single page document'}</div></div></div>`;
+  }
 }
 /* --- interactive WhatsApp --- */
 function whatsappPanel(d){
@@ -621,8 +724,16 @@ function parseFlexibleDate(s){
   return isNaN(native.getTime())?null:native;
 }
 function computeCoreInvoiceChecks(d){
-  if(d.type!=='Invoice')return [];
+  if(d.type!=='Invoice' && d.type!=='Credit Note')return [];
   const out=[];
+  // 0. Template completeness — every mandatory field for THIS invoice type must be present (real, computed live)
+  if(d.sapMatch && INVOICE_TEMPLATES[d.sapMatch.docType]){
+    const tpl=INVOICE_TEMPLATES[d.sapMatch.docType];
+    const missing=tpl.filter(([name,req])=>req && !fieldVal(d,name)).map(([name])=>name);
+    if(missing.length) out.push({s:'fail',name:'Template completeness — '+d.sapMatch.docType,detail:'Mandatory field(s) missing for this invoice type: '+missing.join(', ')+'. Extraction ran against the '+d.sapMatch.docType+' template ('+tpl.length+' configured fields).'});
+    else out.push({s:'pass',name:'Template completeness — '+d.sapMatch.docType,detail:'All '+tpl.filter(x=>x[1]).length+' mandatory fields of the '+d.sapMatch.docType+' template are present ('+tpl.length+' fields configured in total).'});
+  }
+  if(d.type==='Credit Note')return out;
   // 1. Invoice Number — mandatory + REAL duplicate check against every other loaded invoice
   const invNo=fieldVal(d,'Invoice No')||fieldVal(d,'Invoice Number');
   if(!invNo){
@@ -659,6 +770,222 @@ function computeCoreInvoiceChecks(d){
   return out;
 }
 
+/* ============ REAL INVOICE INTAKE — manual entry + Gmail import ============
+   Both paths converge on createInvoiceDoc(), which builds an honest sapMatch skeleton:
+   newly-arrived invoices have a PO reference but no GR/SES yet (that's genuinely how it
+   works — the warehouse/QA hasn't posted receipt yet), so we show "Awaiting GR/SES" as a
+   real pending state rather than fabricating a match that hasn't happened. */
+let manualInvoiceCounter=1, emailInvoiceCounter=1;
+/* ---- Per-type templates: the ONLY fields extracted for that invoice type, and which are mandatory ---- */
+const INVOICE_TEMPLATES={
+  'Material PO Invoice':[['Vendor Name',1],['Vendor GSTIN',1],['Invoice No',1],['Invoice Date',1],['PO Reference',1],['Material / Description',1],['Quantity',0],['Taxable Value',1],['Tax Amount',0],['Total Amount',1]],
+  'Service PO Invoice':[['Vendor Name',1],['Vendor GSTIN',0],['Invoice No',1],['Invoice Date',1],['PO Reference',1],['Service Description',1],['Service Period',0],['SES Reference',0],['Taxable Value',0],['Tax Amount',0],['Total Amount',1]],
+  'Direct / Non-PO Invoice':[['Vendor Name',1],['Invoice No',1],['Invoice Date',1],['Consumer / Account No',0],['Billing Period',0],['Due Date',0],['Tax Amount',0],['Total Amount',1]],
+  'Freight / Logistics Invoice':[['Vendor Name',1],['Vendor GSTIN',0],['Invoice No',1],['Invoice Date',1],['PO Reference',0],['HWB / AWB Number',1],['Job / Shipment Number',1],['Origin',0],['Destination',0],['Chargeable Weight',0],['Freight Charges',0],['Tax Amount',0],['Total Amount',1]],
+  'Asset / Capex Invoice':[['Vendor Name',1],['Vendor GSTIN',0],['Invoice No',1],['Invoice Date',1],['PO Reference',1],['Asset Description',1],['Serial Number',0],['Asset Class',0],['Installation Date',0],['Total Amount',1]],
+  'Credit Note':[['Vendor Name',1],['Credit Note No',1],['Credit Note Date',1],['Reference Invoice',1],['Reason',1],['Credit Amount',1]],
+};
+const INVOICE_TYPE_DEFS={
+  'Material PO Invoice':{matchBasis:'PO + GR based',matchType:'3-way',needsPO:true,waitLabel:'Goods Receipt',route:['AP Desk','Finance Manager (>₹2L)','Park in SAP']},
+  'Service PO Invoice':{matchBasis:'PO + SES based',matchType:'2-way (SES)',needsPO:true,waitLabel:'Service Entry Sheet',route:['AP Desk','Department Head','Park in SAP']},
+  'Direct / Non-PO Invoice':{matchBasis:'GL / Cost Center based — no PO',matchType:'Non-PO (GL/CC)',needsPO:false,route:['AP Desk','Plant Finance Manager','Park in SAP']},
+  'Freight / Logistics Invoice':{matchBasis:'PO based (no GR — service line)',matchType:'2-way',needsPO:true,waitLabel:null,route:['AP Desk','Park in SAP']},
+  'Asset / Capex Invoice':{matchBasis:'PO + Asset (AUC) account assignment',matchType:'3-way',needsPO:true,waitLabel:'Goods Receipt',route:['AP Desk','Plant Head (Capex >₹10L)','Park in SAP']},
+  'Credit Note':{matchBasis:'Reference to original invoice / credit processing',matchType:'Reference match',needsPO:false,route:['AP Desk','Post as credit']},
+};
+function createInvoiceDoc(o){
+  const def=INVOICE_TYPE_DEFS[o.docType]||INVOICE_TYPE_DEFS['Material PO Invoice'];
+  const id=o.source==='email'?('EML-'+String(emailInvoiceCounter++).padStart(3,'0')):o.source==='live'?('LIVE-'+String(liveDocCounter++).padStart(3,'0')):('MAN-'+String(manualInvoiceCounter++).padStart(3,'0'));
+  const amt=parseFloat(String(o.amount).replace(/[^\d.-]/g,''))||0;
+  const fields=o.extractedFields&&o.extractedFields.length?o.extractedFields.map(f=>f2(f.name,f.value,f.confidence)):[
+    f2('Vendor Name',o.vendor,95),f2('Invoice No',o.invoiceNo,95),f2('Invoice Date',o.invoiceDate,95),
+    ...(def.needsPO?[f2('PO Reference',o.poNo||'',o.poNo?90:40)]:[]),
+    f2('Total Amount','₹'+amt.toLocaleString('en-IN'),95),
+  ];
+  const exceptions=[];
+  if(def.needsPO && !o.poNo) exceptions.push({type:'Missing PO',severity:'fail',detail:'This invoice type requires a PO reference and none was provided/extracted.'});
+  else if(def.needsPO && def.waitLabel) exceptions.push({type:'Awaiting '+def.waitLabel,severity:'warn',detail:'PO "'+o.poNo+'" referenced but no '+def.waitLabel+' posted yet in SAP — 3-way/2-way match cannot complete until it is received. This is a genuine pending state, not an error.'});
+  if(o.docType==='Credit Note' && !o.referenceDoc) exceptions.push({type:'Missing reference',severity:'fail',detail:'Credit notes must reference the original invoice being adjusted.'});
+  const sapMatch={
+    docType:o.docType,matchBasis:def.matchBasis,matchType:def.matchType,
+    vendor:o.vendor,vendorCode:'(new — not yet in Vendor Master)',poNo:def.needsPO?(o.poNo||null):null,
+    poStatus:def.needsPO?(o.poNo?'Not yet verified — pending SAP connection':'Missing'):'Not applicable',
+    companyCode:'1000',plant:'1100 — Sri City',paymentTerms:'Pending vendor master lookup',
+    glAccount:o.glAccount||undefined,costCenter:o.costCenter||undefined,assetNo:o.assetNo||undefined,referenceDoc:o.referenceDoc||undefined,
+    lines:[{item:'10',material:o.material||o.vendor+' — line item',
+      po:def.needsPO&&o.poNo?{qty:1,uom:'EA',rate:amt,value:amt}:null,
+      gr:null, ses:null,
+      inv:{qty:1,uom:'EA',rate:amt,value:amt}}],
+    exceptions,
+  };
+  const doc={
+    id,procId:'P-FIN-01',func:'Finance',type:o.docType==='Credit Note'?'Credit Note':'Invoice',
+    party:o.vendor,channel:o.source==='email'?'Email':o.source==='live'?'Live Upload':'Manual entry',
+    status:exceptions.some(e=>e.severity==='fail')?'exception':'pending',
+    amount:(o.docType==='Credit Note'?'−':'')+'₹'+amt.toLocaleString('en-IN'),
+    received:new Date().toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}),
+    fin:{month:new Date().toLocaleDateString('en-US',{month:'short'}),invDate:o.invoiceDate,due:'—',val:amt,paid:false,overdue:0},
+    attachment:o.attachment||{kind:'pdf',name:id+'.pdf',pages:1},
+    fields, checks:[{s:'pass',name:'Intake source',detail:o.source==='email'?'Imported live from Gmail inbox (sj.audree@gmail.com)':o.source==='live'?'Uploaded live and read by Veerai against the '+o.docType+' template':'Entered manually by Priya Nair'}],
+    route:def.route, routePos:0, sapMatch,
+    chat:[m(o.source==='email'?o.vendor:'You',o.chatMsg||(o.source==='email'?'Invoice received by email.':o.source==='live'?'Uploaded live.':'Invoice entered manually into Veerai.'),o.attachment)],
+  };
+  state.docs.unshift(doc);
+  log(id,o.source==='email'?'Invoice imported from Gmail':o.source==='live'?'Invoice uploaded live':'Invoice created manually','Type: '+o.docType+' · Vendor: '+o.vendor,'You');
+  return doc;
+}
+function f2(name,value,conf){return{name,value:String(value),conf,edited:false}}
+
+function openManualInvoice(){
+  const types=Object.keys(INVOICE_TYPE_DEFS);
+  showModal('➕ Add invoice — manual entry',`
+   <label>Invoice type</label>
+   <select id="mi_type" onchange="renderManualFields()">${types.map(t=>`<option>${t}</option>`).join('')}</select>
+   <div id="mi_dynamic" style="margin-top:12px"></div>
+  `,[{label:'Cancel',cls:'btn'},{label:'Add invoice',cls:'btn primary',action:submitManualInvoice}]);
+  renderManualFields();
+}
+function renderManualFields(){
+  const type=$('mi_type').value;
+  const needsPO=INVOICE_TYPE_DEFS[type].needsPO;
+  $('mi_dynamic').innerHTML=`
+   <div style="display:grid;gap:10px">
+    <div><label>Vendor name</label><input id="mi_vendor" placeholder="e.g. Sundaram Polymers Pvt Ltd"></div>
+    <div><label>Invoice number</label><input id="mi_invno" placeholder="e.g. SP/2026/1201"></div>
+    <div><label>Invoice date</label><input id="mi_invdate" placeholder="e.g. 09-Jul-2026"></div>
+    ${needsPO?`<div><label>PO reference</label><input id="mi_po" placeholder="e.g. PO-45021"></div>`:''}
+    ${type==='Direct / Non-PO Invoice'?`<div><label>GL account</label><input id="mi_gl" placeholder="e.g. 40001200 — Electricity Charges"></div><div><label>Cost centre</label><input id="mi_cc" placeholder="e.g. CC-1104"></div>`:''}
+    ${type==='Asset / Capex Invoice'?`<div><label>Asset (AUC) number, if known</label><input id="mi_asset" placeholder="e.g. 700-01142"></div>`:''}
+    ${type==='Credit Note'?`<div><label>Reference invoice (which invoice does this credit?)</label><input id="mi_ref" placeholder="e.g. INV-88231"></div>`:''}
+    <div><label>Amount (₹)</label><input id="mi_amount" placeholder="e.g. 42000"></div>
+   </div>`;
+}
+function submitManualInvoice(){
+  const type=$('mi_type').value;
+  const vendor=$('mi_vendor').value.trim(), invoiceNo=$('mi_invno').value.trim(), invoiceDate=$('mi_invdate').value.trim(), amount=$('mi_amount').value.trim();
+  if(!vendor||!invoiceNo||!invoiceDate||!amount){toast('Vendor, invoice number, date and amount are required');return}
+  const doc=createInvoiceDoc({
+    source:'manual',docType:type,vendor,invoiceNo,invoiceDate,amount,
+    poNo:document.getElementById('mi_po')?$('mi_po').value.trim():'',
+    glAccount:document.getElementById('mi_gl')?$('mi_gl').value.trim():'',
+    costCenter:document.getElementById('mi_cc')?$('mi_cc').value.trim():'',
+    assetNo:document.getElementById('mi_asset')?$('mi_asset').value.trim():'',
+    referenceDoc:document.getElementById('mi_ref')?$('mi_ref').value.trim():'',
+  });
+  closeModal();
+  toast('Invoice '+doc.id+' added — opening for review');
+  openSapDoc(doc.id);
+}
+
+function openGmailImport(){
+  const clientId=getGmailClientId();
+  if(!clientId){toast('Add a Gmail OAuth Client ID in ⚙️ Settings first');openSettings();return}
+  if(typeof google==='undefined'||!google.accounts){toast('Google sign-in library still loading — try again in a second');return}
+  showModal('📧 Import invoice from Gmail',`<div id="gmailImportBody"><div class="spinner"></div><div style="text-align:center;color:var(--muted);font-size:13px">Signing in to Gmail…</div></div>`,[{label:'Close',cls:'btn'}]);
+  try{
+    _gmailTokenClient=google.accounts.oauth2.initTokenClient({
+      client_id:clientId,
+      scope:'https://www.googleapis.com/auth/gmail.readonly https://www.googleapis.com/auth/gmail.send',
+      callback:(resp)=>{
+        if(resp.error){$('gmailImportBody').innerHTML='<div style="color:var(--red)">Google sign-in failed: '+esc(resp.error)+'</div>';return}
+        listGmailInvoiceCandidates(resp.access_token);
+      }
+    });
+    _gmailTokenClient.requestAccessToken();
+  }catch(e){toast('Gmail sign-in error: '+e.message)}
+}
+async function listGmailInvoiceCandidates(token){
+  $('gmailImportBody').innerHTML=`<div class="spinner"></div><div style="text-align:center;color:var(--muted);font-size:13px">Searching sj.audree@gmail.com for invoice attachments…</div>`;
+  try{
+    const q=encodeURIComponent('has:attachment (filename:pdf OR filename:jpg OR filename:jpeg OR filename:png) newer_than:90d');
+    const listResp=await fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages?q='+q+'&maxResults=15',{headers:{'Authorization':'Bearer '+token}});
+    if(!listResp.ok)throw new Error('Gmail list failed: '+listResp.status);
+    const list=await listResp.json();
+    if(!list.messages||!list.messages.length){$('gmailImportBody').innerHTML='<div style="color:var(--muted);font-size:13px">No emails with PDF/image attachments found in the last 90 days.</div>';return}
+    const details=await Promise.all(list.messages.slice(0,10).map(msg=>
+      fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages/'+msg.id+'?format=metadata&metadataHeaders=From&metadataHeaders=Subject&metadataHeaders=Date',{headers:{'Authorization':'Bearer '+token}}).then(r=>r.json())
+    ));
+    window._gmailCandidates={token,items:details};
+    $('gmailImportBody').innerHTML='<div class="section-title" style="margin-top:0">Recent emails with attachments</div>'+
+      details.map((d,i)=>{
+        const h=(d.payload&&d.payload.headers)||[];
+        const get=n=>(h.find(x=>x.name===n)||{}).value||'';
+        return '<div class="proc-item" onclick="pickGmailMessage('+i+')"><div><b style="font-size:12.5px">'+esc(get('Subject')||'(no subject)')+'</b><div style="font-size:11px;color:var(--muted)">'+esc(get('From'))+' · '+esc(get('Date'))+'</div></div><button class="btn ghost sm">Use this →</button></div>';
+      }).join('');
+  }catch(e){
+    $('gmailImportBody').innerHTML='<div style="color:var(--red);font-size:13px">Could not list messages: '+esc(e.message)+'</div>';
+  }
+}
+async function pickGmailMessage(i){
+  const {token,items}=window._gmailCandidates;
+  const msg=items[i];
+  $('gmailImportBody').innerHTML=`<div class="spinner"></div><div style="text-align:center;color:var(--muted);font-size:13px">Fetching attachment and reading it with Veerai…</div>`;
+  try{
+    const full=await (await fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages/'+msg.id+'?format=full',{headers:{'Authorization':'Bearer '+token}})).json();
+    const h=(full.payload.headers)||[]; const get=n=>(h.find(x=>x.name===n)||{}).value||'';
+    const fromHeader=get('From');
+    const findAttachment=(parts)=>{
+      for(const p of parts||[]){
+        if(p.filename && p.body && p.body.attachmentId) return p;
+        if(p.parts){const r=findAttachment(p.parts); if(r)return r;}
+      }
+      return null;
+    };
+    const part=findAttachment(full.payload.parts);
+    if(!part)throw new Error('No attachment found on this message');
+    const attResp=await (await fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages/'+msg.id+'/attachments/'+part.body.attachmentId,{headers:{'Authorization':'Bearer '+token}})).json();
+    const base64=attResp.data.replace(/-/g,'+').replace(/_/g,'/');
+    const mimeType=part.mimeType||'application/pdf';
+    const extracted=await extractWithGemini(base64,mimeType);
+    const guessedType=guessInvoiceType(extracted);
+    window._gmailPending={extracted,base64,mimeType,fromHeader,filename:part.filename};
+    renderGmailExtractedPreview(extracted,guessedType,fromHeader,part.filename,mimeType,base64);
+  }catch(e){
+    $('gmailImportBody').innerHTML='<div style="color:var(--red);font-size:13px">Could not import: '+esc(e.message)+'</div>';
+  }
+}
+function guessInvoiceType(extracted){
+  const blob=(extracted.documentType+' '+extracted.fields.map(f=>f.name+' '+f.value).join(' ')).toLowerCase();
+  if(blob.includes('credit note')||blob.includes('credit memo'))return 'Credit Note';
+  if(blob.includes('calibrat')||blob.includes('amc')||blob.includes('service entry')||blob.includes('consult'))return 'Service PO Invoice';
+  if(blob.includes('electric')||blob.includes('utility')||blob.includes('statutory')||!blob.includes('po'))return 'Direct / Non-PO Invoice';
+  if(blob.includes('freight')||blob.includes('transport')||blob.includes('courier'))return 'Freight / Logistics Invoice';
+  if(blob.includes('asset')||blob.includes('equipment')||blob.includes('machinery'))return 'Asset / Capex Invoice';
+  return 'Material PO Invoice';
+}
+function renderGmailExtractedPreview(extracted,guessedType,fromHeader,filename,mimeType,base64){
+  const types=Object.keys(INVOICE_TYPE_DEFS);
+  $('gmailImportBody').innerHTML=`
+   <div class="section-title" style="margin-top:0">Extracted from: ${esc(filename)}</div>
+   <div class="card" style="padding:4px 14px;margin-bottom:12px">${extracted.fields.map(f=>`<div class="livefield"><span>${esc(f.name)}</span>${confHtml(f.confidence)}</div><div class="livefield" style="border-bottom:1px solid #F3F5F7;padding-top:0"><b>${esc(f.value)}</b></div>`).join('')}</div>
+   <label>Confirm invoice type (auto-suggested)</label>
+   <select id="gi_type">${types.map(t=>`<option ${t===guessedType?'selected':''}>${t}</option>`).join('')}</select>
+   <button class="btn primary" style="width:100%;margin-top:12px" onclick="confirmGmailImport()">➕ Add this invoice</button>
+  `;
+  window._gmailPendingMeta={fromHeader,filename,mimeType};
+}
+function confirmGmailImport(){
+  const {extracted,base64,mimeType:pendingMime}=window._gmailPending;
+  const {fromHeader,filename,mimeType}=window._gmailPendingMeta;
+  const type=$('gi_type').value;
+  const fv=(name)=>{const f=extracted.fields.find(x=>x.name.toLowerCase().includes(name));return f?f.value:''};
+  const dataUrl='data:'+mimeType+';base64,'+base64;
+  const doc=createInvoiceDoc({
+    source:'email',docType:type,
+    vendor:extracted.party||fromHeader.split('<')[0].trim()||'Unknown sender',
+    invoiceNo:fv('invoice no')||fv('invoice number')||('EML-REF-'+Date.now().toString().slice(-6)),
+    invoiceDate:fv('date')||new Date().toLocaleDateString('en-GB'),
+    poNo:fv('po'),
+    amount:fv('total')||fv('amount')||'0',
+    extractedFields:extracted.fields,
+    attachment:{kind:mimeType.includes('pdf')?'pdf':'image',name:filename,pages:1,dataUrl},
+    chatMsg:'Invoice received via email, imported live from sj.audree@gmail.com and extracted by Veerai.',
+  });
+  closeModal();
+  toast('Invoice '+doc.id+' imported from Gmail — opening for review');
+  openSapDoc(doc.id);
+}
+
 function act(id,kind){
   const d=state.docs.find(x=>x.id===id);const p=procById(d.procId);
   if(kind==='approve'){
@@ -680,7 +1007,7 @@ function renderAudit(){
   $('content').innerHTML=`
    <div class="tabs"><button class="${tab===0?'on':''}" onclick="state.auditTab=0;render()">📊 Business insights</button>
    <button class="${tab===1?'on':''}" onclick="state.auditTab=1;render()">🛡️ Operations & audit trail</button></div>
-   ${tab===0?bizTab():opsTab()}`;
+   ${tab===0?bizTab():opsTab()}${demoNotes(['<b>Business insights</b> turns extracted data into finance signals: month-wise invoice value received, payables aging (current / 1–30 / 31–60 / 60+ days), what is due or overdue, and pending or blocked shipments. Click any row to open the document.','<b>Operations and audit trail</b> is append-only: every receive, extraction, validation result, correction, message, approval, override, posting and <i>configuration change</i> is logged with timestamp and actor. Nothing is edited or deleted; corrections create new events.'])}`;
 }
 function bizTab(){
   const invs=state.docs.filter(d=>d.fin);
@@ -779,6 +1106,7 @@ function renderStudio(){
         <button class="btn blue" ${s===WSTEPS.length-1?'disabled':''} onclick="state.ownerStep++;render()">Next →</button>
       </div>
     </div>
+  ${demoNotes(['<b>One process = one function × one document type.</b> The HR PAN reader, the Logistics gate pass and the Manufacturing BMR→MES flow are three processes on the same engine — each with its own template, field set, validation rules, approval route and target system.','<b>The 8 steps:</b> Configure → Template → Fields → Validation Rules → Approval Route → Target System → Test → Publish. Publish is blocked until fields, rules, a route and a passed sandbox test exist.','<b>Scope note:</b> the rule builder captures configuration; the live rule engine currently executes the invoice core rules (duplicate, date, mandatory fields, template completeness). Rules that need external systems (GSTN, NSDL, SAP PO) execute once those connectors are configured.'])}
   </div>`;
 }
 function studioStep(o,s){
@@ -807,12 +1135,18 @@ function studioStep(o,s){
     <div style="font-size:11.5px;color:var(--muted);margin-top:8px">Upload 5–10 real samples per layout variant (photo vs scan vs digital PDF); the AI learns anchors, then generalises to unseen layouts.</div>
    </div>`;
   if(s===2)return `
-   <div class="card" style="max-width:900px"><table><thead><tr><th>Field</th><th>Type / Source</th><th>Master mapping</th><th>Mandatory</th><th></th></tr></thead><tbody>
-    ${o.fields.map((fl,i)=>`<tr><td><b>${esc(fl.name)}</b></td><td>${esc(fl.type)}</td>
-      <td>${fl.master?`<span class="chip violet">${esc(fl.master[0])} · ${esc(fl.master[1])}</span>`:'<span style="color:var(--muted)">—</span>'}</td>
-      <td>${fl.mandatory?'<span class="chip amber">Required</span>':'<span class="chip grey">Optional</span>'}</td>
+   <div class="card" style="max-width:1000px"><table><thead><tr><th>Field</th><th>Type / Source</th><th>Master mapping</th><th>Mandatory</th><th></th></tr></thead><tbody>
+    ${o.fields.map((fl,i)=>`<tr><td><b>${esc(fl.name)}</b></td>
+      <td><select style="padding:5px 8px;font-size:12px" onchange="cur().fields[${i}].type=this.value;render()">${['Text','Number','Currency','Date','Date range','Regex','Masked number','Master lookup'].map(x=>`<option ${fl.type===x?'selected':''}>${x}</option>`).join('')}</select></td>
+      <td><select style="max-width:230px;padding:5px 8px;font-size:12px" onchange="editFieldMaster(${i},this.value)">
+        <option value="">— none —</option>
+        ${state.masters.flatMap(mm=>mm.cols.map(c=>{const val=mm.name+'|'+c;const sel=fl.master&&fl.master[0]===mm.name&&fl.master[1]===c;return `<option value="${esc(val)}" ${sel?'selected':''}>${esc(mm.name)} · ${esc(c)}</option>`})).join('')}
+      </select></td>
+      <td><select style="padding:5px 8px;font-size:12px" onchange="cur().fields[${i}].mandatory=(this.value==='Yes');render()"><option ${fl.mandatory?'selected':''}>Yes</option><option ${!fl.mandatory?'selected':''}>No</option></select></td>
       <td><button class="btn ghost sm" onclick="cur().fields.splice(${i},1);render()">Remove</button></td></tr>`).join('')||'<tr><td colspan="5" class="empty">No fields yet — define what the AI should read from this document.</td></tr>'}
-   </tbody></table></div>
+   </tbody></table>
+   <div style="padding:9px 14px;font-size:11px;color:var(--muted);border-top:1px solid var(--line)">Every dropdown above is editable in place — change type, master mapping or mandatory status any time, no need to remove and re-add.</div>
+   </div>
    <div class="addform" style="max-width:900px">
     <b>Add field</b>
     <div class="fr" style="grid-template-columns:1.4fr 1fr 1.2fr 1fr auto;align-items:end;margin-top:8px">
@@ -890,6 +1224,7 @@ function cur(){return state.processes[state.selProc]}
 function addTemplate(){const n=$('tplname').value.trim();if(!n){toast('Enter a template name');return}
   cur().templates.push(tpl(n,+$('tplsamples').value));cur().template=cur().templates[cur().templates.length-1];
   log(cur().id,'Template created',n,'Owner');render();toast('Template "'+n+'" created and selected')}
+function editFieldMaster(i,val){cur().fields[i].master=val?val.split('|'):null;render();toast(val?'Mapping updated':'Mapping cleared')}
 function addFld(){const n=$('fldname').value.trim();if(!n){toast('Enter a field name');return}
   const mv=$('fldmaster').value;cur().fields.push(pf(n,$('fldtype').value,$('fldman').value==='Yes',mv?mv.split('|'):null));
   render();toast('Field "'+n+'" added'+(mv?' with master mapping':''))}
@@ -915,7 +1250,7 @@ function renderSapAp(){
   const exCount=withMatch.reduce((s,d)=>s+d.sapMatch.exceptions.length,0);
   const clean=withMatch.filter(d=>d.sapMatch.exceptions.length===0).length;
   const byType={};invs.forEach(d=>{const t=d.sapMatch?d.sapMatch.docType:'Unclassified';byType[t]=(byType[t]||0)+1});
-  $('topbar').innerHTML=`<h1>\ud83e\uddfe SAP AP Invoice Automation</h1><span class="sub">Dedicated AP Email \u2192 Intake \u2192 Classify \u2192 Select Template \u2192 Extract Configured Fields \u2192 Validate \u2192 Match with SAP \u2192 Exceptions \u2192 Approve \u2192 Park \u2192 Post \u2192 Payment</span>`;
+  $('topbar').innerHTML=`<h1>\ud83e\uddfe SAP AP Invoice Automation</h1><span class="sub">Dedicated AP Email \u2192 Intake \u2192 Classify \u2192 Select Template \u2192 Extract Configured Fields \u2192 Validate \u2192 Match with SAP \u2192 Exceptions \u2192 Approve \u2192 Park \u2192 Post \u2192 Payment</span>` + '<button class="btn" style="margin-left:auto" onclick="openManualInvoice()">➕ Add invoice manually</button><button class="btn primary" onclick="openGmailImport()">📧 Import from Gmail</button>';
   $('content').innerHTML=`
    <div class="grid" style="grid-template-columns:repeat(4,1fr);margin-bottom:16px">
     ${[['Invoices in pipeline',invs.length],['Matched clean (no exceptions)',clean],['Open exceptions',exCount],['Touchless-eligible',clean+' / '+withMatch.length]].map(s=>`<div class="card stat"><div class="n">${s[1]}</div><div class="l">${s[0]}</div></div>`).join('')}
@@ -927,7 +1262,7 @@ function renderSapAp(){
     <thead><tr><th>Invoice type</th><th>Typical example</th><th>SAP treatment</th></tr></thead>
     <tbody><tr><td><b>Material PO Invoice</b></td><td>Raw material, packing material, consumables</td><td class='mono'>PO + GR based</td></tr><tr><td><b>Service PO Invoice</b></td><td>Calibration, AMC, manpower, consulting</td><td class='mono'>PO + SES based</td></tr><tr><td><b>Direct / Non-PO Invoice</b></td><td>Utility, statutory fee, certain expenses</td><td class='mono'>GL / Cost Center based</td></tr><tr><td><b>Freight / Logistics Invoice</b></td><td>Transporter / courier</td><td class='mono'>PO or direct, depending on process</td></tr><tr><td><b>Asset / Capex Invoice</b></td><td>Equipment / machinery</td><td class='mono'>PO + Asset (AUC) account assignment</td></tr><tr><td><b>Credit Note</b></td><td>Supplier credit adjustment</td><td class='mono'>Reference / credit processing</td></tr></tbody>
    </table>
-   <div style="padding:10px 14px;font-size:11.5px;color:var(--muted);border-top:1px solid var(--line)">Each invoice type is a separate Process Studio configuration \u2014 its own template, its own field set (only the fields relevant to that type are ever extracted), its own SAP matching logic, and its own approval route. Classification runs first, before any field-level extraction, using lightweight signals: presence/absence of a PO number, vendor category, keywords (\u201cAMC\u201d, \u201ccalibration\u201d, \u201celectricity\u201d, \u201ccredit note\u201d), and the sender/vendor master record.</div>
+   
    </div>
 
    <div class="section-title">Invoices by type \u2014 this run</div>
@@ -953,25 +1288,13 @@ function renderSapAp(){
       </tr>`}).join('')}
     </tbody></table></div>
 
-   <div class="section-title">How each stage works</div>
-   <div class="grid" style="grid-template-columns:repeat(2,1fr)">
-    <div class="card" style="padding:16px">
-      <b>1\u20132. Capture, Extract</b>
-      <p style="color:var(--muted);font-size:12.5px;margin-top:6px">Invoice arrives at a dedicated AP inbox (email, WhatsApp, or portal) as a PDF or scan. Before any field extraction, Veerai reads just enough to classify the invoice type \u2014 it does not yet try to extract every field.</p>
-    </div>
-    <div class="card" style="padding:16px">
-      <b>3\u20135. Classify, Select Template, Extract Fields</b>
-      <p style="color:var(--muted);font-size:12.5px;margin-top:6px">Once classified (Material PO / Service PO / Direct-Non-PO / Freight / Asset-Capex / Credit Note), Veerai selects that type's approved template and extracts <i>only</i> the fields configured for it \u2014 a utility bill never tries to read a PO number it doesn't have; a Material PO invoice always requires one.</p>
-    </div>
-    <div class="card" style="padding:16px">
-      <b>6\u20137. Validate, Match with SAP</b>
-      <p style="color:var(--muted);font-size:12.5px;margin-top:6px">Vendor validity, PO validity (PO exists, is open, not fully invoiced), and GST/tax correctness are checked live against SAP. Matching logic is type-specific: PO+GR for materials, PO+SES for services, GL/Cost Centre for non-PO spend, PO+Asset for capex, and reference-matching for credit notes.</p>
-    </div>
-    <div class="card" style="padding:16px">
-      <b>8\u201312. Resolve Exceptions, Approve, Park, Post, Payment</b>
-      <p style="color:var(--muted);font-size:12.5px;margin-top:6px">If the PO (or GL/cost-centre, or asset assignment) is valid and matching passes, the invoice is <b>parked</b> in SAP first \u2014 reserved with a document number, visible in the system, but not yet hitting the GL. Only after final approval does it get <b>posted</b>; SAP's own payment run then settles it on the vendor's terms.</p>
-    </div>
-   </div>`;
+   ${demoNotes([
+     '<b>Classification runs first, before any field extraction.</b> Veerai reads just enough to decide the business type (Material PO / Service PO / Direct-Non-PO / Freight / Asset-Capex / Credit Note), then selects that type\'s template and extracts <b>only</b> its configured fields. A utility bill never tries to read a PO number it doesn\'t have.',
+     '<b>Each type has its own SAP treatment</b> (table above): PO+GR for materials, PO+SES for services, GL/Cost-centre for non-PO spend, PO+Asset for capex, reference-matching for credit notes. The match panel inside each invoice adapts its columns accordingly.',
+     '<b>Park, then Post.</b> If the PO / GL / asset assignment is valid and matching passes, the invoice is <b>parked</b> in SAP first (document number reserved, visible, not yet in the GL). Only after final approval is it <b>posted</b>; SAP\'s payment run then settles it.',
+     '<b>What is live vs. staged:</b> template extraction, classification, duplicate check, date validation and mandatory-field checks are computed in real time. Vendor code, PO status and payment terms show as \"pending SAP connection\" until the live OData link is configured \u2014 they are never fabricated.',
+     '<b>Try it:</b> use <b>Add invoice manually</b>, <b>Import from Gmail</b>, or <b>Live Extract</b> on the Inbox \u2014 all three route invoices into this pipeline with the correct type.'
+   ])}   </div>`;
 }
 function openSapDoc(id){state.view='doc';state.selDoc=id;state.docTab='original';state.sapView=true;render()}
 
@@ -1029,7 +1352,7 @@ function renderMasters(){
    <div class="tabs"><button class="${tab===0?'on':''}" onclick="state.mastersTab=0;render()">🗂️ Connected masters</button>
    <button class="${tab===1?'on':''}" onclick="state.mastersTab=1;render()">🔗 Field ↔ master mapping</button>
    <button class="${tab===2?'on':''}" onclick="state.mastersTab=2;render()">🔁 Translation layer (X → Y)</button></div>
-   ${tab===0?mastersTab():tab===1?mappingTab():translationTab()}`;
+   ${tab===0?mastersTab():tab===1?mappingTab():translationTab()}${demoNotes(['<b>A master is a pointer, not a copy.</b> It can be an Audree-hosted table, a live read-only query on the client database, a client system API (SAP OData, HRMS), a scheduled file feed, or third-party reference data. Normalization behaves identically whichever source is used.','<b>Field ↔ master mapping</b> makes extraction validate and auto-complete against the master (Batch No → Batch Master, Transporter → Transporter Master, PAN name → Employee Master).','<b>Translation layer (X → Y):</b> receive Dolo 650, normalize to Paracetamol 650 mg, deliver as HIMS code MED-PARA-650 or SAP material MM-40120 — the same mechanism serves part-number cross-references in manufacturing.'])}`;
 }
 function mastersTab(){
   const mm=state.masters[state.selMaster];
@@ -1137,6 +1460,9 @@ function setApiKey(k){try{localStorage.setItem('audree_gemini_key',k)}catch(e){}
 function getGmailClientId(){try{return localStorage.getItem('audree_gmail_client_id')||''}catch(e){return ''}}
 function setGmailClientId(k){try{localStorage.setItem('audree_gmail_client_id',k)}catch(e){}}
 
+function storageUsedKB(){
+  try{const raw=localStorage.getItem(STORAGE_KEY);return raw?Math.round(raw.length/1024):0}catch(e){return '?'}
+}
 function openSettings(){
   const key=getApiKey();
   const gClient=getGmailClientId();
@@ -1149,6 +1475,11 @@ function openSettings(){
      <label>Gmail OAuth Client ID (for real Gmail sending)</label>
      <input id="settingsGClient" value="${gClient.replace(/"/g,'')}" placeholder="xxxxxxxx.apps.googleusercontent.com">
      <div style="font-size:12px;color:var(--muted);margin-top:8px">One-time setup in Google Cloud Console (free): create an OAuth Client ID, add this page's URL as an authorized origin, add your own Gmail as a test user, grant the gmail.send scope. Ask Veerai for the step-by-step if needed.</div>
+   </div>
+   <div style="border-top:1px solid var(--line);padding-top:16px;margin-top:16px">
+     <label>Local browser storage</label>
+     <div style="font-size:12px;color:var(--muted);margin-bottom:10px">Documents, corrections and approvals are saved in this browser so they survive a page refresh — they are not shared with other devices or users, and are not a real database. Roughly ${storageUsedKB()} KB in use.</div>
+     <button class="btn danger sm" onclick="if(confirm('This clears every document, correction and approval added in this browser and reloads the original demo data. Continue?'))resetDemoData()">Reset demo data</button>
    </div>
   `,[
    {label:'Cancel',cls:'btn'},
@@ -1200,8 +1531,24 @@ async function handleLiveFile(file){
      <div class="spinner"></div>
      <div style="text-align:center;color:var(--muted);font-size:13px">Veerai is reading the document…</div>`;
     try{
-      const fields=await extractWithGemini(base64,file.type);
-      renderLiveResult(fields,reader.result,file.name,isPdf);
+      // PASS 1 — classify (no field extraction yet)
+      const cls=await classifyWithGemini(base64,file.type);
+      const isInvoice=(cls.category==='Invoice'||cls.category==='Credit Note')&&cls.invoiceType&&INVOICE_TEMPLATES[cls.invoiceType];
+      if(isInvoice){
+        // PASS 2 — extract ONLY the configured fields of that type's template
+        $('liveResult').innerHTML=`
+         ${isPdf?'<div style="text-align:center;color:var(--muted);margin-bottom:10px">📄 '+esc(file.name)+'</div>':`<img class="extract-preview" src="${reader.result}">`}
+         <div class="spinner"></div>
+         <div style="text-align:center;color:var(--muted);font-size:13px">Classified as <b>${esc(cls.invoiceType)}</b> — extracting its ${INVOICE_TEMPLATES[cls.invoiceType].length} configured fields…</div>`;
+        const fields=await extractTemplateWithGemini(base64,file.type,cls.invoiceType);
+        renderLiveResult({documentType:cls.invoiceType,party:cls.party,fields,classification:cls,isInvoice:true},reader.result,file.name,isPdf);
+        Object.assign(window._pendingLiveDoc,{_base64:base64,_mime:file.type,_dataUrl:reader.result});
+      }else{
+        const generic=await extractWithGemini(base64,file.type);
+        generic.classification=cls; generic.isInvoice=false;
+        renderLiveResult(generic,reader.result,file.name,isPdf);
+        Object.assign(window._pendingLiveDoc,{_base64:base64,_mime:file.type,_dataUrl:reader.result});
+      }
     }catch(err){
       const isFileProtocol=window.location.protocol==='file:';
       const isNetworkFail=err instanceof TypeError && /fetch/i.test(err.message);
@@ -1210,6 +1557,12 @@ async function handleLiveFile(file){
         hint=`<b>Likely cause:</b> you opened this file directly from disk (file://…). Google's API blocks requests from local files for security. <b>Fix:</b> host this file on a real URL — drag it onto <a href="https://app.netlify.com/drop" target="_blank" style="color:var(--blue)">app.netlify.com/drop</a> (free, 30 seconds) and open it from the URL it gives you instead of double-clicking the file.`;
       }else if(isNetworkFail){
         hint='This looks like a network/CORS-level failure rather than an API error — check your internet connection, and confirm this page is loaded from a real https:// URL rather than a local file.';
+      }else if(err.status===503){
+        hint=`<b>This is on Google's side, not yours.</b> All backup models were also overloaded right now — your API key is fine. Wait 30–60 seconds and try the upload again; these spikes are usually brief.`;
+      }else if(err.status===429){
+        hint=`<b>Rate limit hit.</b> Your free-tier key has a per-minute request cap and you've exceeded it — wait about a minute and try again. If this happens often, a paid tier removes the cap.`;
+      }else if(err.status===400||err.status===403){
+        hint=`<b>The API key itself was rejected.</b> Open ⚙️ Settings and check the key is pasted exactly (no spaces), is still active in Google AI Studio, and hasn't been restricted to other referrers or APIs.`;
       }
       $('liveResult').innerHTML=`<div style="color:var(--red);padding:14px;background:var(--red-bg);border-radius:8px;font-size:13px"><b>Extraction failed:</b> ${esc(err.message)}<br><br>${hint}</div>`;
     }
@@ -1217,57 +1570,117 @@ async function handleLiveFile(file){
   reader.readAsDataURL(file);
 }
 
-async function extractWithGemini(base64,mimeType){
+/* Shared resilient Gemini caller: retry-on-overload + model fallback. Every extraction path uses this. */
+async function callGemini(prompt,base64,mimeType){
   const key=getApiKey();
   if(!key)throw new Error('No API key configured');
+  const modelsToTry=['gemini-3.6-flash','gemini-2.0-flash','gemini-1.5-flash'];
+  const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+  let resp,lastErr,lastStatus;
+  outer: for(const model of modelsToTry){
+    for(let attempt=0;attempt<2;attempt++){
+      try{
+        resp=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(key)}`,{
+          method:'POST',headers:{'Content-Type':'application/json'},
+          body:JSON.stringify({contents:[{parts:[{text:prompt},{inline_data:{mime_type:mimeType||'image/jpeg',data:base64}}]}]})
+        });
+      }catch(networkErr){ throw networkErr; }
+      if(resp.ok)break outer;
+      lastErr=await resp.text(); lastStatus=resp.status;
+      const overloaded=resp.status===503||resp.status===429;
+      if(overloaded && attempt===0){ toast('Model busy \u2014 retrying in a moment\u2026'); await sleep(1500); continue; }
+      if(resp.status===404 || overloaded){ toast('Switching to a backup model\u2026'); break; }
+      break outer;
+    }
+  }
+  if(!resp.ok){const e=new Error('API error '+lastStatus+': '+(lastErr||'').slice(0,200));e.status=lastStatus;throw e}
+  const data=await resp.json();
+  const text=data.candidates?.[0]?.content?.parts?.[0]?.text;
+  if(!text)throw new Error('No response from model');
+  return JSON.parse(text.replace(/```json|```/g,'').trim());
+}
+
+/* Generic extraction (used for non-invoice documents like PAN / Aadhaar / gate pass) */
+async function extractWithGemini(base64,mimeType){
   const prompt=`You are a document data extraction engine. Look at this image/document and identify what type of document it is (e.g. PAN Card, Aadhaar Card, Invoice, Gate Pass, etc). Then extract every meaningful field you can see (names, ID numbers, dates, amounts, addresses, etc).
 Respond with ONLY valid JSON, no markdown, no code fences, in exactly this shape:
 {"documentType":"...", "party":"short label for whose document this is", "fields":[{"name":"...", "value":"...", "confidence": <integer 0-100 reflecting how legible/certain this field is>}]}
 If a field is partially obscured, masked, or hard to read, give it a lower confidence (below 75) rather than guessing confidently. Mask/redact any full unmasked national ID number in your "value" output down to last 4 digits for privacy, even if you can read it fully (e.g. show "XXXX XXXX 8813" not the full number).`;
-  const modelsToTry=['gemini-3.6-flash','gemini-2.0-flash','gemini-1.5-flash'];
-  let resp,lastErr;
-  for(const model of modelsToTry){
-    try{
-      resp=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(key)}`,{
-        method:'POST',headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({contents:[{parts:[{text:prompt},{inline_data:{mime_type:mimeType||'image/jpeg',data:base64}}]}]})
-      });
-    }catch(networkErr){
-      throw networkErr; // propagate TypeError("Failed to fetch") as-is so the caller can detect it specifically
-    }
-    if(resp.ok)break;
-    lastErr=await resp.text();
-    if(resp.status!==404)break; // only fall through to next model on "model not found/retired"
-  }
-  if(!resp.ok){throw new Error('API error '+resp.status+': '+(lastErr||'').slice(0,200))}
-  const data=await resp.json();
-  const text=data.candidates?.[0]?.content?.parts?.[0]?.text;
-  if(!text)throw new Error('No response from model');
-  const clean=text.replace(/```json|```/g,'').trim();
-  return JSON.parse(clean);
+  return callGemini(prompt,base64,mimeType);
+}
+
+/* PASS 1 \u2014 Classify: is it an invoice, and if so which business type? (cheap, no field extraction yet) */
+async function classifyWithGemini(base64,mimeType){
+  const prompt=`You are a document classifier for an accounts-payable system. Look at this document and decide two things.
+1. "category": one of "Invoice", "Credit Note", "PAN Card", "Aadhaar Card", "Gate Pass", "Shipping Note", "Other".
+2. If category is "Invoice" or "Credit Note", "invoiceType": exactly one of:
+   "Material PO Invoice" (raw material, packing material, consumables \u2014 goods with a PO),
+   "Service PO Invoice" (calibration, AMC, manpower, consulting \u2014 services with a PO),
+   "Direct / Non-PO Invoice" (utility bills, statutory fees, expenses with no PO),
+   "Freight / Logistics Invoice" (transporter, courier, freight forwarder, shipping, airway bills, HWB/AWB),
+   "Asset / Capex Invoice" (equipment, machinery, capital assets),
+   "Credit Note".
+   Otherwise invoiceType is null.
+3. "party": the vendor / issuer name in a few words.
+4. "reason": one short sentence on why you chose this type.
+Respond with ONLY valid JSON, no markdown: {"category":"...","invoiceType":"..."|null,"party":"...","reason":"..."}`;
+  return callGemini(prompt,base64,mimeType);
+}
+
+/* PASS 2 \u2014 Extract ONLY the configured fields of the selected template */
+async function extractTemplateWithGemini(base64,mimeType,invoiceType){
+  const tpl=INVOICE_TEMPLATES[invoiceType]||INVOICE_TEMPLATES['Material PO Invoice'];
+  const fieldList=tpl.map(([n,req])=>`- "${n}"${req?' (mandatory)':' (optional)'}`).join('\n');
+  const prompt=`You are extracting a "${invoiceType}" for an SAP accounts-payable system. Extract ONLY the following configured fields \u2014 do not add any other fields, even if the document contains more information:
+${fieldList}
+For every field in that list return an entry, even if the value is not found (then use value "" and confidence 0). Use the exact field names given. For amounts keep the currency symbol and number as printed. For dates use the format printed on the document.
+Respond with ONLY valid JSON, no markdown, no code fences: {"fields":[{"name":"...","value":"...","confidence":<integer 0-100>}]}`;
+  const out=await callGemini(prompt,base64,mimeType);
+  // keep template order, drop anything the model invented
+  const byName={}; (out.fields||[]).forEach(f=>byName[f.name.toLowerCase()]=f);
+  return tpl.map(([n])=>{const f=byName[n.toLowerCase()]||{name:n,value:'',confidence:0};return {name:n,value:String(f.value||''),confidence:+f.confidence||0}});
 }
 
 function renderLiveResult(result,dataUrl,fileName,isPdf){
   window._pendingLiveDoc={result,fileName,isPdf};
   const avg=Math.round(result.fields.reduce((s,f)=>s+f.confidence,0)/result.fields.length)||0;
+  const types=Object.keys(INVOICE_TYPE_DEFS);
+  const cls=result.classification||{};
+  const missing=result.isInvoice?(INVOICE_TEMPLATES[result.documentType]||[]).filter(([n,req])=>req&&!(result.fields.find(f=>f.name===n)||{}).value).map(([n])=>n):[];
   $('liveResult').innerHTML=`
    ${isPdf?'':`<img class="extract-preview" src="${dataUrl}">`}
    <div style="text-align:center;margin-bottom:10px">
-     <span class="chip blue">${esc(result.documentType||'Document')}</span>
+     <span class="chip ${result.isInvoice?(INVOICE_TYPE_CHIP[result.documentType]||'blue'):'blue'}">${esc(result.documentType||'Document')}</span>
      <span class="chip ${avg>=90?'teal':avg>=75?'amber':'red'}">Avg confidence ${avg}%</span>
+     ${result.isInvoice?`<span class="chip grey">${result.fields.length} template fields</span>`:''}
    </div>
+   ${cls.reason?`<div style="font-size:11.5px;color:var(--muted);text-align:center;margin-bottom:10px">Classifier: ${esc(cls.reason)}</div>`:''}
+   ${result.isInvoice?`
+   <label>Invoice type (auto-classified \u2014 change if wrong, fields will re-extract)</label>
+   <select id="live_type" onchange="reclassifyLive(this.value)" style="margin-bottom:12px">${types.map(t=>`<option ${t===result.documentType?'selected':''}>${t}</option>`).join('')}</select>`:''}
    <div class="card" style="padding:4px 14px;margin-bottom:14px">
-     ${result.fields.map(f=>`<div class="livefield"><span>${esc(f.name)}</span>${confHtml(f.confidence)}</div><div class="livefield" style="border-bottom:1px solid #F3F5F7;padding-top:0"><b>${esc(f.value)}</b></div>`).join('')}
+     ${result.fields.map(f=>`<div class="livefield"><span>${esc(f.name)}${result.isInvoice&&(INVOICE_TEMPLATES[result.documentType]||[]).find(([n,req])=>n===f.name&&req)?' <span style="color:var(--red)">*</span>':''}</span>${confHtml(f.confidence)}</div><div class="livefield" style="border-bottom:1px solid #F3F5F7;padding-top:0"><b style="${!f.value?'color:var(--red)':''}">${esc(f.value||'\u2014 not found')}</b></div>`).join('')}
    </div>
-   <button class="btn primary" style="width:100%;margin-bottom:10px" onclick="addLiveDocument()">➕ Add to Inbox as a live document</button>
+   ${missing.length?`<div style="color:var(--red);font-size:12px;margin-bottom:10px">Mandatory fields not found: ${esc(missing.join(', '))} \u2014 will be raised as an exception.</div>`:''}
+   <button class="btn primary" style="width:100%;margin-bottom:10px" onclick="addLiveDocument()">\u2795 ${result.isInvoice?'Add to SAP AP pipeline':'Add to Inbox'}</button>
    <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px">
      <input id="emailDest" value="sj.audree@gmail.com" placeholder="destination email" style="flex:1">
    </div>
    <div style="display:flex;gap:8px;margin-bottom:6px">
-     <button class="btn" style="flex:1" onclick="emailExtractedData()">✉️ Open in email app</button>
-     <button class="btn blue" style="flex:1" onclick="sendViaGmailAPI()">📨 Send via Gmail (real)</button>
-   </div>
-   <div style="font-size:11px;color:var(--muted);text-align:center;margin-top:8px">This was extracted live by Veerai — not pre-scripted demo data. "Open in email app" pre-fills a draft you send yourself. "Send via Gmail" actually sends it through your own authorized Gmail account (one-time Google sign-in), with your explicit consent each time.</div>`;
+     <button class="btn" style="flex:1" onclick="emailExtractedData()">\u2709\ufe0f Open in email app</button>
+     <button class="btn blue" style="flex:1" onclick="sendViaGmailAPI()">\ud83d\udce8 Send via Gmail (real)</button>
+   </div>`;
+}
+async function reclassifyLive(newType){
+  const p=window._pendingLiveDoc; if(!p)return;
+  const base64=p._base64, mime=p._mime;
+  if(!base64){toast('Re-extraction unavailable for this upload'); return;}
+  $('liveResult').innerHTML=`<div class="spinner"></div><div style="text-align:center;color:var(--muted);font-size:13px">Re-extracting as <b>${esc(newType)}</b>\u2026</div>`;
+  try{
+    const fields=await extractTemplateWithGemini(base64,mime,newType);
+    renderLiveResult({documentType:newType,party:p.result.party,fields,classification:{reason:'Manually reclassified by reviewer'},isInvoice:true},p._dataUrl,p.fileName,p.isPdf);
+    window._pendingLiveDoc._base64=base64;window._pendingLiveDoc._mime=mime;window._pendingLiveDoc._dataUrl=p._dataUrl;
+  }catch(e){toast('Re-extraction failed: '+e.message)}
 }
 
 function buildEmailContent(p){
@@ -1398,29 +1811,50 @@ function sendDocumentViaGmail(docId){
 
 let liveDocCounter=1;
 function addLiveDocument(){
-  if(!window._pendingLiveDoc){toast('Nothing to add — extract a document first');return}
+  if(!window._pendingLiveDoc){toast('Nothing to add \u2014 extract a document first');return}
   const {result,fileName,isPdf}=window._pendingLiveDoc;
+  const dataUrl=window._pendingLiveDoc._dataUrl;
+  const type=(document.getElementById('live_type')&&$('live_type').value)||result.documentType;
+  if(result.isInvoice && INVOICE_TYPE_DEFS[type]){
+    // Invoice \u2192 goes into the real SAP AP process with its template, type-specific match basis and route
+    const fv=n=>{const f=result.fields.find(x=>x.name.toLowerCase()===n.toLowerCase());return f?f.value:''};
+    const doc=createInvoiceDoc({
+      source:'live',docType:type,vendor:fv('Vendor Name')||result.party||'Unknown vendor',
+      invoiceNo:fv('Invoice No')||fv('Credit Note No'),invoiceDate:fv('Invoice Date')||fv('Credit Note Date'),
+      poNo:fv('PO Reference'),amount:fv('Total Amount')||fv('Credit Amount')||'0',referenceDoc:fv('Reference Invoice'),
+      material:fv('Material / Description')||fv('Service Description')||fv('Asset Description')||fv('Job / Shipment Number'),
+      extractedFields:result.fields,
+      attachment:{kind:isPdf?'pdf':'image',name:fileName,pages:1,dataUrl},
+      chatMsg:'Uploaded live and read by Veerai using the '+type+' template ('+result.fields.length+' configured fields).',
+    });
+    window._pendingLiveDoc=null; closeModal();
+    toast('Invoice '+doc.id+' added to SAP AP pipeline as '+type);
+    openSapDoc(doc.id);
+    return;
+  }
+  // Non-invoice document (PAN, Aadhaar, gate pass, \u2026) \u2192 generic Inbox document
   const id='LIVE-'+String(liveDocCounter++).padStart(3,'0');
   const avg=Math.round(result.fields.reduce((s,f)=>s+f.confidence,0)/result.fields.length)||0;
   const newDoc={
     id,procId:'P-LIVE',func:'Live Demo',type:result.documentType||'Document',party:result.party||'Live upload',
-    channel:'Live Upload',status:avg<80?'exception':'pending',amount:'—',received:new Date().toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}),
-    attachment:{kind:isPdf?'pdf':'image',name:fileName,pages:1},
+    channel:'Live Upload',status:avg<80?'exception':'pending',amount:'\u2014',received:new Date().toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}),
+    attachment:{kind:isPdf?'pdf':'image',name:fileName,pages:1,dataUrl},
     fields:result.fields.map(f=>({name:f.name,value:f.value,conf:f.confidence,edited:false})),
     checks:[{s:avg>=85?'pass':'warn',name:'Live extraction quality',detail:'Average field confidence '+avg+'% from a real, unscripted document'}],
     route:['Reviewer','Approve'],routePos:0,
-    chat:[{who:'You (live demo)',text:'Uploaded live during demo — genuinely extracted by Veerai, not pre-loaded data.',att:{kind:isPdf?'pdf':'image',name:fileName},tm:'now'}],
+    chat:[{who:'You',text:'Uploaded live \u2014 read by Veerai.',att:{kind:isPdf?'pdf':'image',name:fileName},tm:'now'}],
   };
-  if(!state.processes.find(p=>p.id==='P-LIVE'))state.processes.push({id:'P-LIVE',name:'Live Demo Upload',func:'Live Demo',docType:'Any',target:'Demo only — not posted anywhere',fields:[],rules:[],route:[]});
+  if(!state.processes.find(p=>p.id==='P-LIVE'))state.processes.push({id:'P-LIVE',name:'Live Upload',func:'Live Demo',docType:'Any',target:'Review only',fields:[],rules:[],route:[]});
   state.docs.unshift(newDoc);
   window._pendingLiveDoc=null;
   closeModal();
-  toast('Live document added to Inbox — open '+id+' to review');
+  toast('Document added to Inbox \u2014 open '+id+' to review');
   openDoc(id);
 }
 
 /* ============ RENDER ============ */
-function render(){renderNav();({inbox:renderInbox,doc:renderDocView,audit:renderAudit,studio:renderStudio,masters:renderMasters,sapap:renderSapAp}[state.view]||renderInbox)()}
+function render(){renderNav();({inbox:renderInbox,doc:renderDocView,audit:renderAudit,studio:renderStudio,masters:renderMasters,sapap:renderSapAp}[state.view]||renderInbox)();saveState()}
+initSidebar();
 render();
 </script>
 </body>
