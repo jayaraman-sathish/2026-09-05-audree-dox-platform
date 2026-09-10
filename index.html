@@ -402,6 +402,67 @@ state.docs=[
      lines:[{item:'10',material:'PP Granules — Grade H030SG (short-shipment credit)',po:{qty:20,uom:'KG',rate:820,value:16400},gr:null,inv:{qty:20,uom:'KG',rate:820,value:16400}}],
      matchType:'Reference match',exceptions:[]},
    chat:[m('Sundaram AP','As discussed, credit note for the 20kg short-shipment on SP/2026/1147.',{kind:'pdf',name:'SP-CN-2026-0044.pdf'}),m('me','Received — this resolves the quantity variance on INV-88231, will process together.')]},
+  /* ---- three REAL client documents, uploaded by the user, used to validate/refine the templates above ---- */
+  {id:'INV-GE-01',procId:'P-FIN-01',func:'Finance',type:'Invoice',party:'Gurukrupa Engineers',channel:'Email',status:'exception',amount:'₹1,58,986',received:'02-Apr-2022',
+   fin:{month:'Apr',invDate:'02-Apr-2022',due:'—',val:158986,paid:false,overdue:0},
+   attachment:{kind:'pdf',name:'5100000029-GURUKRUPA.pdf',pages:1},
+   fields:[f('Vendor Name','Gurukrupa Engineers',98),f('Vendor GSTIN','36AOGPC1561A2ZM',96),f('Invoice No','01',97),f('Invoice Date','02.04.2022',97),f('PO Reference(s)','5500004214, 5500004764',82),f('SAC Code','998711',95),f('Service Description','Project and Maintenance Work For The Month March-2022',96),f('Taxable Value','₹1,34,734',97),f('CGST Amount','₹12,126 (9%)',96),f('SGST Amount','₹12,126 (9%)',96),f('Total Amount','₹1,58,986',98)],
+   checks:[v('pass','Duplicate check','No match in 365 days'),v('warn','Two PO numbers on one invoice','Invoice references PO 5500004214 and 5500004764 — SAP typically expects one PO per line; needs manual split or a multi-PO line assignment before parking'),v('pass','GSTIN active','Verified — intra-state (CGST+SGST), IGST correctly not charged')],
+   route:['AP Desk','Department Head','Park in SAP'],routePos:0,
+   sapMatch:{docType:'Service PO Invoice',matchBasis:'PO + SES based',vendor:'Gurukrupa Engineers',vendorCode:'(new — not yet in Vendor Master)',poNo:'5500004214 / 5500004764',poStatus:'Not yet verified — pending SAP connection',companyCode:'1000',plant:'1100 — Sri City',paymentTerms:'Pending vendor master lookup',
+     lines:[{item:'10',material:'Project and Maintenance Work — March 2022',po:{qty:1,uom:'AU',rate:134734,value:134734},ses:null,inv:{qty:1,uom:'AU',rate:134734,value:134734}}],
+     matchType:'2-way (SES)',exceptions:[{type:'Multiple PO references',severity:'warn',detail:'Two PO numbers (5500004214, 5500004764) appear on a single invoice line — the template currently captures one PO Reference field; this needs either a split invoice or a multi-PO account assignment in SAP.'},{type:'Awaiting Service Entry Sheet',severity:'warn',detail:'PO referenced but no SES posted yet in SAP — cannot complete 2-way match until the department confirms the work was accepted.'}]},
+   chat:[m('Gurukrupa Engineers','Invoice 01 for March 2022 maintenance work, PO copy attached.',{kind:'pdf',name:'5100000029-GURUKRUPA.pdf'}),m('me','Received — checking against both PO numbers referenced before parking.')]},
+  {id:'INV-WC-02',procId:'P-FIN-01',func:'Finance',type:'Invoice',party:'World Courier (India) Pvt Ltd',channel:'Email',status:'pending',amount:'₹6,441.62',received:'21-Apr-2022',
+   fin:{month:'Apr',invDate:'21-Apr-2022',due:'21-May-2022',val:6441.62,paid:false,overdue:0},
+   attachment:{kind:'pdf',name:'5100001543-world_courier.pdf',pages:1},
+   fields:[f('Vendor Name','World Courier (India) Pvt Ltd',98),f('Vendor GSTIN','36AAACW3078K1Z0',97),f('Document Number','0096010148',98),f('Document Date','21/04/2022',97),f('Due Date','21/05/2022',96),f('PO Reference','5500005061',78),f('Job Number','221190202CL',96),f('Job Date','18/04/2022',95),f('HWB / AWB Number','712798487',97),f('Charges Breakdown','Base ₹2,000 + Security/Fuel ₹539 + Logger ₹1,250 + T CTRL Gel Packs ₹720 + Pkg Thermal ₹950 = ₹5,459',93),f('CGST Amount','₹491.31 (9%)',96),f('SGST Amount','₹491.31 (9%)',96),f('Total Amount','₹6,441.62',98)],
+   checks:[v('pass','Duplicate check','No match in 365 days'),v('pass','Template completeness — Freight / Logistics Invoice','Job Number, Job Date and HWB Number all captured separately from Document Number/Date, matching the real courier invoice layout'),v('pass','GSTIN active','Verified')],
+   route:['AP Desk','Park in SAP'],routePos:0,
+   sapMatch:{docType:'Freight / Logistics Invoice',matchBasis:'PO based (no GR — service line)',vendor:'World Courier (India) Pvt Ltd',vendorCode:'(new — not yet in Vendor Master)',poNo:'5500005061',poStatus:'Not yet verified — pending SAP connection',companyCode:'1000',plant:'— (service PO, no plant)',paymentTerms:'NET30',
+     lines:[{item:'10',material:'Pharma courier — Job 221190202CL, HWB 712798487',po:{qty:1,uom:'AU',rate:6441.62,value:6441.62},gr:null,inv:{qty:1,uom:'AU',rate:6441.62,value:6441.62}}],
+     matchType:'2-way',exceptions:[]},
+   chat:[m('World Courier','Tax invoice for shipment 221190202CL, HWB 712798487.',{kind:'pdf',name:'5100001543-world_courier.pdf'})]},
+  {id:'DN-TS-03',procId:'P-FIN-01',func:'Finance',type:'Debit Note',party:'EURL TS Pharma',channel:'Email',status:'pending',amount:'USD 2,345',received:'10-Jun-2026',
+   fin:{month:'Jun',invDate:'10-Jun-2026',due:'—',val:2345,paid:false,overdue:0},
+   attachment:{kind:'pdf',name:'Gemcitabine_inj_200mg-Renewal.PDF',pages:1},
+   fields:[f('Service Provider','EURL TS Pharma (Algeria)',97),f('Debit Note No','TS/01/001 DN/2026',97),f('Debit Note Date','10/06/2026',96),f('Client Name','Hetero Labs Limited',97),f('Description of Services','Renewal Fees for Marketing Authorization of Gemcitabine Chlorhydrate Inj IV 200mg',95),f('Currency','USD',98),f('Amount','2,245 + 100 misc = 2,345',96),f('Bank IBAN','DZ58 0002 1000 3611 3005 5947 50',90),f('Bank SWIFT','SOGEDZAL',92)],
+   checks:[v('pass','Duplicate check','No match in 365 days'),v('pass','Template completeness — Debit Note','Foreign vendor, foreign currency and international bank details (IBAN/SWIFT) all captured — this document type did not exist in the platform until this real example was supplied'),v('warn','Foreign currency posting','USD 2,345 — requires FX rate lookup at posting time; no PO applicable (regulatory/statutory fee)')],
+   route:['AP Desk','Regulatory Affairs sign-off','International Payments Desk','Park in SAP'],routePos:0,
+   sapMatch:{docType:'Debit Note',matchBasis:'Foreign currency, no PO — statutory/regulatory payment',vendor:'EURL TS Pharma',vendorCode:'(new — not yet in Vendor Master)',poNo:null,poStatus:'Not applicable',companyCode:'1000',plant:'—',paymentTerms:'International wire — IBAN/SWIFT',
+     lines:[{item:'10',material:'Marketing Authorization Renewal — Gemcitabine Chlorhydrate Inj IV 200mg',po:null,gr:null,inv:{qty:1,uom:'AU',rate:2345,value:2345}}],
+     matchType:'Foreign vendor, direct',exceptions:[]},
+   chat:[m('TS Pharma (Algeria)','Debit note for regulatory renewal fee, Gemcitabine 200mg IV.',{kind:'pdf',name:'Gemcitabine_inj_200mg-Renewal.PDF'})]},
+  {id:'INV-SP-04',procId:'P-FIN-01',func:'Finance',type:'Invoice',party:'Shriji Polymers (India) Ltd',channel:'Email',status:'pending',amount:'₹21,665.00',received:'01-Apr-2022',
+   fin:{month:'Apr',invDate:'01-Apr-2022',due:'01-May-2022',val:21665,paid:false,overdue:0},
+   attachment:{kind:'pdf',name:'5100000042-OORJA.pdf',pages:1},
+   fields:[f('Vendor Name','Shriji Polymers (India) Ltd',98),f('Vendor GSTIN','23AAICS6990E1Z5',97),f('Invoice No','3010056382',98),f('Invoice Date','01.04.2022',97),f('PO Reference','4500014311',94),f('PO Date','17.03.2022',90),f('Material / Description','38mm C1C with Liner FSM-1 White',95),f('HSN Code','39235010',96),f('Batch No','160355213',93),f('Quantity','7,200 (2400 x 3 Boxes)',95),f('Freight','₹1,440.00',94),f('Taxable Value','₹18,360.00',96),f('IGST Amount','₹3,304.80 (18%)',96),f('Total Amount','₹21,665.00',98),f('GRN Number','5000044729',88),f('GRN Date','05.04.2022',87),f('Transporter','Narsingh Transport',92),f('Vehicle Number','MP-13-GB-3162',90),f('LR Number','4673',89)],
+   checks:[v('pass','Duplicate check','No match in 365 days'),v('pass','Template completeness — Material PO Invoice','HSN, Batch No, freight-as-separate-line and GRN all captured — matches the real invoice layout exactly'),v('pass','Tax treatment','Inter-state (Madhya Pradesh → Telangana) correctly charged as IGST 18%, not CGST/SGST'),v('pass','GRN present','Goods Receipt 5000044729 dated 05.04.2022 found on the document — 3-way match can complete immediately, no waiting required')],
+   route:['AP Desk','Finance Manager (>₹2L)','Park in SAP'],routePos:0,
+   sapMatch:{docType:'Material PO Invoice',matchBasis:'PO + GR based',vendor:'Shriji Polymers (India) Ltd',vendorCode:'(new — not yet in Vendor Master)',poNo:'4500014311',poStatus:'Not yet verified — pending SAP connection',companyCode:'1000',plant:'1100 — Sri City',paymentTerms:'Pending vendor master lookup',
+     lines:[{item:'10',material:'38mm C1C with Liner FSM-1 White (Batch 160355213)',po:{qty:7200,uom:'NO',rate:2.35,value:16920},gr:{qty:7200,uom:'NO',docNo:'5000044729',date:'05.04.2022'},inv:{qty:7200,uom:'NO',rate:2.35,value:16920}}],
+     matchType:'3-way',exceptions:[]},
+   chat:[m('Shriji Polymers','Invoice 3010056382 for closure caps, PO 4500014311, GRN posted 05-Apr.',{kind:'pdf',name:'5100000042-OORJA.pdf'})]},
+  {id:'INV-SS-05',procId:'P-FIN-01',func:'Finance',type:'Invoice',party:'Sai Siri Packaging',channel:'Email',status:'pending',amount:'₹12,488.00',received:'04-Apr-2022',
+   fin:{month:'Apr',invDate:'04-Apr-2022',due:'03-Jun-2022',val:12488,paid:false,overdue:0},
+   attachment:{kind:'pdf',name:'5100000044-SAI_SIRI.pdf',pages:1},
+   fields:[f('Vendor Name','Sai Siri Packaging',97),f('Vendor GSTIN','36ABZFS2830E1ZU',97),f('Invoice No','SSP/0019/22-23',98),f('Invoice Date','4-Apr-2022',97),f('PO Reference','4500014462',93),f('PO Date','28-Mar-2022',89),f('Material / Description','5 Ply Corrugated Box 230x170x180mm — 12 pallets',95),f('HSN Code','48191010',96),f('Batch No','',0),f('Quantity','777.00 (77x10/1x7 bundles)',94),f('Freight','',0),f('Taxable Value','₹10,582.74',96),f('CGST Amount','₹952.45 (9%)',96),f('SGST Amount','₹952.45 (9%)',96),f('Total Amount','₹12,488.00',98),f('GRN Number','5000044714',88),f('GRN Date','04.04.2022',87),f('Transporter','',0),f('Vehicle Number','TS08UH8353',91),f('LR Number','',0)],
+   checks:[v('pass','Duplicate check','No match in 365 days'),v('warn','Template completeness — Material PO Invoice','Batch No, Freight, Transporter and LR Number not present on this vendor invoice format — fields correctly show as not found rather than guessed'),v('pass','Tax treatment','Intra-state (Telangana → Telangana) correctly charged as CGST 9% + SGST 9%, not IGST'),v('pass','GRN present','Goods Receipt 5000044714 dated 04.04.2022 found on the document — 3-way match can complete immediately')],
+   route:['AP Desk','Park in SAP'],routePos:0,
+   sapMatch:{docType:'Material PO Invoice',matchBasis:'PO + GR based',vendor:'Sai Siri Packaging',vendorCode:'(new — not yet in Vendor Master)',poNo:'4500014462',poStatus:'Not yet verified — pending SAP connection',companyCode:'1000',plant:'1100 — Sri City',paymentTerms:'60 Days',
+     lines:[{item:'10',material:'5 Ply Corrugated Box 230x170x180mm',po:{qty:777,uom:'NO',rate:13.62,value:10582.74},gr:{qty:777,uom:'NO',docNo:'5000044714',date:'04.04.2022'},inv:{qty:777,uom:'NO',rate:13.62,value:10582.74}}],
+     matchType:'3-way',exceptions:[]},
+   chat:[m('Sai Siri Packaging','Invoice SSP/0019/22-23 for corrugated boxes, PO 4500014462.',{kind:'pdf',name:'5100000044-SAI_SIRI.pdf'})]},
+  {id:'SUB-CL-06',procId:'P-FIN-01',func:'Finance',type:'Invoice',party:'Clarivate Analytics (India) Private Limited',channel:'Email',status:'pending',amount:'₹95,60,781.26',received:'02-Jun-2026',
+   fin:{month:'Jun',invDate:'02-Jun-2026',due:'02-Jul-2026',val:9560781.26,paid:false,overdue:0},
+   attachment:{kind:'pdf',name:'INR_95_60_781_26_-Clarivate_Analytics_Newport.pdf',pages:5},
+   fields:[f('Vendor Name','Clarivate Analytics (India) Private Limited',98),f('Vendor GSTIN','27AAFCT8504N1ZU',97),f('Invoice No','80010000006371',98),f('Invoice Date','Jun 02, 2026',97),f('Order Form / Contract Ref','Order Form dated 01-Apr-2026, Quote Q-700651',92),f('Product / Service Description','Cortellis Product Intelligence Premium (4 Named End User licenses)',96),f('Billing Period','Jun 01, 2026 – May 31, 2027',96),f('License Quantity','4',95),f('Payment Terms','Net 30',96),f('Payment Due Date','Jul 02, 2026',96),f('Taxable Value','₹81,02,357.00',96),f('Tax Amount','₹14,58,424.26 (IGST 18%)',96),f('Total Amount','₹95,60,781.26',98)],
+   checks:[v('pass','Duplicate check','No match in 365 days'),v('fail','No PO on file','This invoice type did not exist in the platform before this example — no PO field applies; matching must be against the signed Order Form (Q-700651) instead, not SAP PO/GR data'),v('pass','Contract reference found','Matches multi-year Order Form: Year 1 ₹81,02,357 / Year 2 ₹83,45,427 / Year 3 ₹85,95,790, signed by both parties 01–06 Apr 2026'),v('warn','Supporting document — payment instruction','A separate TT (wire transfer) request letter accompanies this invoice, addressed to Accounts Dept, with full HSBC beneficiary details — this is a payment authorization document, not part of the invoice itself, and should be filed as supporting evidence per §11 multi-document handling')],
+   route:['AP Desk','IT/Procurement Owner sign-off','Park in SAP'],routePos:0,
+   sapMatch:{docType:'Subscription / License Invoice',matchBasis:'Order Form / Contract based — no PO',vendor:'Clarivate Analytics (India) Private Limited',vendorCode:'(new — not yet in Vendor Master)',poNo:null,poStatus:'Not applicable',companyCode:'1000',plant:'—',paymentTerms:'Net 30',referenceDoc:'Order Form Q-700651 (01-Apr-2026, 3-year term)',
+     lines:[{item:'10',material:'Cortellis Product Intelligence Premium — Jun 2026 to May 2027 (Year 1 of 3)',po:null,gr:null,inv:{qty:4,uom:'AU',rate:2025589.25,value:9560781.26}}],
+     matchType:'Contract match',exceptions:[{type:'No PO on file',severity:'fail',detail:'Subscription invoices are matched against the signed Order Form, not a PO — confirm Year 1 fee (₹81,02,357 + 18% IGST = ₹95,60,781.26) matches the contract before parking.'}]},
+   chat:[m('Clarivate Billing','Annual invoice for Cortellis Product Intelligence Premium, Year 1 of the 3-year Order Form.',{kind:'pdf',name:'INR_95_60_781_26_-Clarivate_Analytics_Newport.pdf'}),m('me','Cross-checked against signed Order Form Q-700651 — amount matches Year 1 fee exactly. Also received a separate TT request letter for this payment — filing as supporting document.')]},
   /* ---- more shipping notes: pending vs dispatched for logistics analytics ---- */
   sn('SN-9990','Apex Pharma Distributors, Nagpur','800 units','Sree Kaveri Logistics','pending','Awaiting vehicle placement — planned 09-Jul','06-Jul-2026'),
   sn('SN-9995','Medisphere Ltd, Pune','2,400 units','BlueDart Surface','exception','Stock short by 150 units — batch VX-2217 not yet released','07-Jul-2026'),
@@ -778,12 +839,14 @@ function computeCoreInvoiceChecks(d){
 let manualInvoiceCounter=1, emailInvoiceCounter=1;
 /* ---- Per-type templates: the ONLY fields extracted for that invoice type, and which are mandatory ---- */
 const INVOICE_TEMPLATES={
-  'Material PO Invoice':[['Vendor Name',1],['Vendor GSTIN',1],['Invoice No',1],['Invoice Date',1],['PO Reference',1],['Material / Description',1],['Quantity',0],['Taxable Value',1],['Tax Amount',0],['Total Amount',1]],
-  'Service PO Invoice':[['Vendor Name',1],['Vendor GSTIN',0],['Invoice No',1],['Invoice Date',1],['PO Reference',1],['Service Description',1],['Service Period',0],['SES Reference',0],['Taxable Value',0],['Tax Amount',0],['Total Amount',1]],
+  'Material PO Invoice':[['Vendor Name',1],['Vendor GSTIN',1],['Invoice No',1],['Invoice Date',1],['PO Reference',1],['PO Date',0],['Material / Description',1],['HSN Code',0],['Batch No',0],['Quantity',0],['Freight',0],['Taxable Value',1],['CGST Amount',0],['SGST Amount',0],['IGST Amount',0],['Total Amount',1],['GRN Number',0],['GRN Date',0],['Transporter',0],['Vehicle Number',0],['LR Number',0]],
+  'Service PO Invoice':[['Vendor Name',1],['Vendor GSTIN',0],['Invoice No',1],['Invoice Date',1],['PO Reference(s)',1],['SAC Code',0],['Service Description',1],['Service Period',0],['SES Reference',0],['Taxable Value',0],['CGST Amount',0],['SGST Amount',0],['IGST Amount',0],['Total Amount',1]],
   'Direct / Non-PO Invoice':[['Vendor Name',1],['Invoice No',1],['Invoice Date',1],['Consumer / Account No',0],['Billing Period',0],['Due Date',0],['Tax Amount',0],['Total Amount',1]],
-  'Freight / Logistics Invoice':[['Vendor Name',1],['Vendor GSTIN',0],['Invoice No',1],['Invoice Date',1],['PO Reference',0],['HWB / AWB Number',1],['Job / Shipment Number',1],['Origin',0],['Destination',0],['Chargeable Weight',0],['Freight Charges',0],['Tax Amount',0],['Total Amount',1]],
+  'Freight / Logistics Invoice':[['Vendor Name',1],['Vendor GSTIN',0],['Document Number',1],['Document Date',1],['Due Date',0],['PO Reference',0],['Job Number',0],['Job Date',0],['HWB / AWB Number',1],['Origin',0],['Destination',0],['Chargeable Weight',0],['Charges Breakdown',0],['CGST Amount',0],['SGST Amount',0],['Total Amount',1]],
   'Asset / Capex Invoice':[['Vendor Name',1],['Vendor GSTIN',0],['Invoice No',1],['Invoice Date',1],['PO Reference',1],['Asset Description',1],['Serial Number',0],['Asset Class',0],['Installation Date',0],['Total Amount',1]],
+  'Subscription / License Invoice':[['Vendor Name',1],['Vendor GSTIN',0],['Invoice No',1],['Invoice Date',1],['Order Form / Contract Ref',0],['Product / Service Description',1],['Billing Period',1],['License Quantity',0],['Payment Terms',0],['Payment Due Date',0],['Taxable Value',0],['Tax Amount',0],['Total Amount',1]],
   'Credit Note':[['Vendor Name',1],['Credit Note No',1],['Credit Note Date',1],['Reference Invoice',1],['Reason',1],['Credit Amount',1]],
+  'Debit Note':[['Service Provider',1],['Debit Note No',1],['Debit Note Date',1],['Client Name',1],['Description of Services',1],['Currency',1],['Amount',1],['Bank IBAN',0],['Bank SWIFT',0]],
 };
 const INVOICE_TYPE_DEFS={
   'Material PO Invoice':{matchBasis:'PO + GR based',matchType:'3-way',needsPO:true,waitLabel:'Goods Receipt',route:['AP Desk','Finance Manager (>₹2L)','Park in SAP']},
@@ -791,7 +854,9 @@ const INVOICE_TYPE_DEFS={
   'Direct / Non-PO Invoice':{matchBasis:'GL / Cost Center based — no PO',matchType:'Non-PO (GL/CC)',needsPO:false,route:['AP Desk','Plant Finance Manager','Park in SAP']},
   'Freight / Logistics Invoice':{matchBasis:'PO based (no GR — service line)',matchType:'2-way',needsPO:true,waitLabel:null,route:['AP Desk','Park in SAP']},
   'Asset / Capex Invoice':{matchBasis:'PO + Asset (AUC) account assignment',matchType:'3-way',needsPO:true,waitLabel:'Goods Receipt',route:['AP Desk','Plant Head (Capex >₹10L)','Park in SAP']},
+  'Subscription / License Invoice':{matchBasis:'Order Form / Contract based — no PO',matchType:'Contract match',needsPO:false,route:['AP Desk','IT/Procurement Owner sign-off','Park in SAP']},
   'Credit Note':{matchBasis:'Reference to original invoice / credit processing',matchType:'Reference match',needsPO:false,route:['AP Desk','Post as credit']},
+  'Debit Note':{matchBasis:'Foreign currency, no PO — statutory/regulatory payment',matchType:'Foreign vendor, direct',needsPO:false,route:['AP Desk','Regulatory Affairs sign-off','International Payments Desk','Park in SAP']},
 };
 function createInvoiceDoc(o){
   const def=INVOICE_TYPE_DEFS[o.docType]||INVOICE_TYPE_DEFS['Material PO Invoice'];
@@ -819,10 +884,10 @@ function createInvoiceDoc(o){
     exceptions,
   };
   const doc={
-    id,procId:'P-FIN-01',func:'Finance',type:o.docType==='Credit Note'?'Credit Note':'Invoice',
+    id,procId:'P-FIN-01',func:'Finance',type:o.docType==='Credit Note'?'Credit Note':o.docType==='Debit Note'?'Debit Note':'Invoice',
     party:o.vendor,channel:o.source==='email'?'Email':o.source==='live'?'Live Upload':'Manual entry',
     status:exceptions.some(e=>e.severity==='fail')?'exception':'pending',
-    amount:(o.docType==='Credit Note'?'−':'')+'₹'+amt.toLocaleString('en-IN'),
+    amount:(o.docType==='Credit Note'?'−':'')+(o.currency&&o.currency!=='INR'&&o.currency!=='₹'?(o.currency+' '):'₹')+amt.toLocaleString('en-IN'),
     received:new Date().toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}),
     fin:{month:new Date().toLocaleDateString('en-US',{month:'short'}),invDate:o.invoiceDate,due:'—',val:amt,paid:false,overdue:0},
     attachment:o.attachment||{kind:'pdf',name:id+'.pdf',pages:1},
@@ -947,10 +1012,14 @@ async function pickGmailMessage(i){
 function guessInvoiceType(extracted){
   const blob=(extracted.documentType+' '+extracted.fields.map(f=>f.name+' '+f.value).join(' ')).toLowerCase();
   if(blob.includes('credit note')||blob.includes('credit memo'))return 'Credit Note';
-  if(blob.includes('calibrat')||blob.includes('amc')||blob.includes('service entry')||blob.includes('consult'))return 'Service PO Invoice';
-  if(blob.includes('electric')||blob.includes('utility')||blob.includes('statutory')||!blob.includes('po'))return 'Direct / Non-PO Invoice';
-  if(blob.includes('freight')||blob.includes('transport')||blob.includes('courier'))return 'Freight / Logistics Invoice';
+  if(blob.includes('debit note')||blob.includes('debit memo'))return 'Debit Note';
+  if(blob.includes('subscription')||blob.includes('license')||blob.includes('order form')||blob.includes('named user')||blob.includes('billing period')||blob.includes('saas'))return 'Subscription / License Invoice';
+  if(blob.includes('calibrat')||blob.includes('amc')||blob.includes('service entry')||blob.includes('consult')||blob.includes('project and maint')||blob.includes('sac code'))return 'Service PO Invoice';
+  if(blob.includes('freight')||blob.includes('transport')||blob.includes('courier')||blob.includes('hwb')||blob.includes('awb')||blob.includes('job no')||blob.includes('job number'))return 'Freight / Logistics Invoice';
   if(blob.includes('asset')||blob.includes('equipment')||blob.includes('machinery'))return 'Asset / Capex Invoice';
+  if(blob.includes('hsn code')||blob.includes('batch no')||blob.includes('grn')||blob.includes('material'))return 'Material PO Invoice';
+  if(blob.includes('electric')||blob.includes('utility')||blob.includes('statutory'))return 'Direct / Non-PO Invoice';
+  if(!blob.includes('po ')&&!blob.includes('purchase order'))return 'Direct / Non-PO Invoice';
   return 'Material PO Invoice';
 }
 function renderGmailExtractedPreview(extracted,guessedType,fromHeader,filename,mimeType,base64){
@@ -1236,7 +1305,7 @@ function addRt(){const c=$('rtcond').value.trim(),p2=$('rtpath').value.trim();if
 /* ============ MASTERS & MAPPING ============ */
 /* ============ SAP AP INVOICE AUTOMATION ============ */
 const SAP_PIPE=['Capture','Extract','Classify','Select Template','Extract Fields','Validate','Match with SAP','Resolve Exceptions','Approve','Park in SAP','Post in SAP','Payment'];
-const INVOICE_TYPE_CHIP={'Material PO Invoice':'blue','Service PO Invoice':'violet','Direct / Non-PO Invoice':'amber','Freight / Logistics Invoice':'teal','Asset / Capex Invoice':'red','Credit Note':'grey'};
+const INVOICE_TYPE_CHIP={'Material PO Invoice':'blue','Service PO Invoice':'violet','Direct / Non-PO Invoice':'amber','Freight / Logistics Invoice':'teal','Asset / Capex Invoice':'red','Subscription / License Invoice':'violet','Credit Note':'grey','Debit Note':'grey'};
 function sapStage(d){
   if(d.status==='approved')return 10;
   if(!d.sapMatch)return 5;
@@ -1260,7 +1329,7 @@ function renderSapAp(){
    <div class="section-title">Step 1 \u2014 Classification: what business type of invoice is this?</div>
    <div class="card" style="margin-bottom:16px"><table>
     <thead><tr><th>Invoice type</th><th>Typical example</th><th>SAP treatment</th></tr></thead>
-    <tbody><tr><td><b>Material PO Invoice</b></td><td>Raw material, packing material, consumables</td><td class='mono'>PO + GR based</td></tr><tr><td><b>Service PO Invoice</b></td><td>Calibration, AMC, manpower, consulting</td><td class='mono'>PO + SES based</td></tr><tr><td><b>Direct / Non-PO Invoice</b></td><td>Utility, statutory fee, certain expenses</td><td class='mono'>GL / Cost Center based</td></tr><tr><td><b>Freight / Logistics Invoice</b></td><td>Transporter / courier</td><td class='mono'>PO or direct, depending on process</td></tr><tr><td><b>Asset / Capex Invoice</b></td><td>Equipment / machinery</td><td class='mono'>PO + Asset (AUC) account assignment</td></tr><tr><td><b>Credit Note</b></td><td>Supplier credit adjustment</td><td class='mono'>Reference / credit processing</td></tr></tbody>
+    <tbody><tr><td><b>Material PO Invoice</b></td><td>Raw material, packing material, consumables</td><td class='mono'>PO + GR based</td></tr><tr><td><b>Service PO Invoice</b></td><td>Calibration, AMC, manpower, consulting</td><td class='mono'>PO + SES based</td></tr><tr><td><b>Direct / Non-PO Invoice</b></td><td>Utility, statutory fee, certain expenses</td><td class='mono'>GL / Cost Center based</td></tr><tr><td><b>Freight / Logistics Invoice</b></td><td>Transporter / courier</td><td class='mono'>PO or direct, depending on process</td></tr><tr><td><b>Asset / Capex Invoice</b></td><td>Equipment / machinery</td><td class='mono'>PO + Asset (AUC) account assignment</td></tr><tr><td><b>Subscription / License Invoice</b></td><td>Software, SaaS, data subscription (e.g. Cortellis, Bloomberg)</td><td class='mono'>Order Form / contract based — no PO</td></tr><tr><td><b>Credit Note</b></td><td>Supplier credit adjustment</td><td class='mono'>Reference / credit processing</td></tr><tr><td><b>Debit Note</b></td><td>Foreign vendor, regulatory/statutory fee</td><td class='mono'>Foreign currency, no PO, IBAN/SWIFT</td></tr></tbody>
    </table>
    
    </div>
@@ -1533,7 +1602,7 @@ async function handleLiveFile(file){
     try{
       // PASS 1 — classify (no field extraction yet)
       const cls=await classifyWithGemini(base64,file.type);
-      const isInvoice=(cls.category==='Invoice'||cls.category==='Credit Note')&&cls.invoiceType&&INVOICE_TEMPLATES[cls.invoiceType];
+      const isInvoice=(cls.category==='Invoice'||cls.category==='Credit Note'||cls.category==='Debit Note')&&cls.invoiceType&&INVOICE_TEMPLATES[cls.invoiceType];
       if(isInvoice){
         // PASS 2 — extract ONLY the configured fields of that type's template
         $('liveResult').innerHTML=`
@@ -1612,14 +1681,16 @@ If a field is partially obscured, masked, or hard to read, give it a lower confi
 /* PASS 1 \u2014 Classify: is it an invoice, and if so which business type? (cheap, no field extraction yet) */
 async function classifyWithGemini(base64,mimeType){
   const prompt=`You are a document classifier for an accounts-payable system. Look at this document and decide two things.
-1. "category": one of "Invoice", "Credit Note", "PAN Card", "Aadhaar Card", "Gate Pass", "Shipping Note", "Other".
-2. If category is "Invoice" or "Credit Note", "invoiceType": exactly one of:
+1. "category": one of "Invoice", "Credit Note", "Debit Note", "PAN Card", "Aadhaar Card", "Gate Pass", "Shipping Note", "Other".
+2. If category is "Invoice", "Credit Note" or "Debit Note", "invoiceType": exactly one of:
    "Material PO Invoice" (raw material, packing material, consumables \u2014 goods with a PO),
-   "Service PO Invoice" (calibration, AMC, manpower, consulting \u2014 services with a PO),
+   "Service PO Invoice" (calibration, AMC, manpower, consulting, project/maintenance work \u2014 services with a PO, may show an SAC code instead of HSN),
    "Direct / Non-PO Invoice" (utility bills, statutory fees, expenses with no PO),
-   "Freight / Logistics Invoice" (transporter, courier, freight forwarder, shipping, airway bills, HWB/AWB),
+   "Freight / Logistics Invoice" (transporter, courier, freight forwarder, shipping, airway bills, HWB/AWB, job numbers),
    "Asset / Capex Invoice" (equipment, machinery, capital assets),
-   "Credit Note".
+   "Subscription / License Invoice" (recurring annual/multi-year software, data, or SaaS subscription fee, tied to an Order Form or contract rather than a PO, often shows a billing period and license/user quantity),
+   "Credit Note",
+   "Debit Note" (a formal debit note document, often a foreign vendor billing in a foreign currency for regulatory/statutory/renewal fees, no PO, international bank details like IBAN/SWIFT).
    Otherwise invoiceType is null.
 3. "party": the vendor / issuer name in a few words.
 4. "reason": one short sentence on why you chose this type.
