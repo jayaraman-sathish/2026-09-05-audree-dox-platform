@@ -489,10 +489,29 @@ function loadPersistedState(){
     const raw=localStorage.getItem(STORAGE_KEY);
     if(!raw)return false;
     const snap=JSON.parse(raw);
-    if(snap.docs)state.docs=snap.docs;
+    // MERGE, don't overwrite: keep the user's own edits/approvals from their browser,
+    // but always surface any NEW seed documents/masters added since their last visit
+    // (otherwise a stale saved snapshot permanently hides newly added demo examples).
+    if(snap.docs){
+      const seedDocs=state.docs; // the fresh seed array defined just above in this file
+      const persistedIds=new Set(snap.docs.map(d=>d.id));
+      const newSeedDocs=seedDocs.filter(d=>!persistedIds.has(d.id));
+      state.docs=[...snap.docs, ...newSeedDocs];
+      if(newSeedDocs.length)console.log('Merged in',newSeedDocs.length,'new seed document(s) not present in saved browser data:',newSeedDocs.map(d=>d.id).join(', '));
+    }
     if(snap.audit)state.audit=snap.audit;
-    if(snap.processes)state.processes=snap.processes;
-    if(snap.masters)state.masters=snap.masters;
+    if(snap.processes){
+      const seedProcs=state.processes;
+      const persistedProcIds=new Set(snap.processes.map(p=>p.id));
+      const newSeedProcs=seedProcs.filter(p=>!persistedProcIds.has(p.id));
+      state.processes=[...snap.processes, ...newSeedProcs];
+    }
+    if(snap.masters){
+      const seedMasters=state.masters;
+      const persistedNames=new Set(snap.masters.map(m=>m.name));
+      const newSeedMasters=seedMasters.filter(m=>!persistedNames.has(m.name));
+      state.masters=[...snap.masters, ...newSeedMasters];
+    }
     return true;
   }catch(e){ return false; }
 }
@@ -573,7 +592,20 @@ function go(vw){state.view=vw;state.selDoc=null;render()}
 function openDoc(id){state.view='doc';state.selDoc=id;state.docTab='original';state.sapView=false;render()}
 
 /* ============ INBOX with FUNCTION + TYPE FILTERS ============ */
-function setFilter(k,val){state.filters[k]=val;render()}
+function setFilter(k,val){
+  const activeEl=document.activeElement;
+  const activeId=activeEl&&activeEl.id;
+  const selStart=activeEl&&typeof activeEl.selectionStart==='number'?activeEl.selectionStart:null;
+  state.filters[k]=val;
+  render();
+  if(activeId){
+    const el=document.getElementById(activeId);
+    if(el&&el.focus){
+      el.focus();
+      if(selStart!==null&&el.setSelectionRange){try{el.setSelectionRange(selStart,selStart)}catch(e){}}
+    }
+  }
+}
 function renderInbox(){
   $('topbar').innerHTML=`<h1>Document Inbox</h1><span class="sub">Any function · any document type · email, WhatsApp, portal, SFTP, ERP</span>
    <button class="btn primary" style="margin-left:auto" onclick="openLiveUpload()">📷 Live Extract (real document)</button>
@@ -581,9 +613,20 @@ function renderInbox(){
   const F=state.filters;
   const types=['All',...new Set(state.docs.map(d=>d.type))];
   const smap={'Needs review':'pending','Exception':'exception','Approved':'approved','In approval':'routing','Awaiting clarification':'clarify','Rejected':'rejected'};
+  const q=(F.q||'').trim().toLowerCase();
+  const matchesSearch=(d)=>{
+    if(!q)return true;
+    if(d.id.toLowerCase().includes(q))return true;
+    if(d.party.toLowerCase().includes(q))return true;
+    if(d.type.toLowerCase().includes(q))return true;
+    if((d.amount||'').toLowerCase().includes(q))return true;
+    if(d.channel.toLowerCase().includes(q))return true;
+    if(d.fields&&d.fields.some(f=>f.value&&String(f.value).toLowerCase().includes(q)))return true;
+    return false;
+  };
   const docs=state.docs.filter(d=>
     (F.func==='All'||d.func===F.func)&&(F.type==='All'||d.type===F.type)&&
-    (F.status==='All'||d.status===smap[F.status])&&(F.channel==='All'||d.channel===F.channel));
+    (F.status==='All'||d.status===smap[F.status])&&(F.channel==='All'||d.channel===F.channel)&&matchesSearch(d));
   const stats=[['Documents',state.docs.length],['Exceptions',state.docs.filter(d=>d.status==='exception').length],['Live processes',state.processes.filter(p=>p.published).length],['Avg. AI confidence','91%']];
   const fileWarning=window.location.protocol==='file:'?`
    <div class="card" style="padding:12px 16px;margin-bottom:14px;background:var(--amber-bg);border-color:#EAD6A8">
@@ -595,12 +638,14 @@ function renderInbox(){
    ${fileWarning}
    <div class="grid" style="grid-template-columns:repeat(4,1fr);margin-bottom:16px">${stats.map(s=>`<div class="card stat"><div class="n">${s[1]}</div><div class="l">${s[0]}</div></div>`).join('')}</div>
    <div class="filterbar">
+     <div style="flex:1;min-width:220px"><label>Search</label><input id="inboxSearch" value="${esc(F.q||'')}" placeholder="Document ID, vendor, invoice no, amount…" oninput="setFilter('q',this.value)"></div>
      <div><label>Business function</label><select onchange="setFilter('func',this.value)">${['All',...FUNCS].map(x=>`<option ${F.func===x?'selected':''}>${x}</option>`).join('')}</select></div>
      <div><label>Document type</label><select onchange="setFilter('type',this.value)">${types.map(x=>`<option ${F.type===x?'selected':''}>${x}</option>`).join('')}</select></div>
      <div><label>Status</label><select onchange="setFilter('status',this.value)">${['All','Needs review','Exception','In approval','Awaiting clarification','Approved','Rejected'].map(x=>`<option ${F.status===x?'selected':''}>${x}</option>`).join('')}</select></div>
      <div><label>Channel</label><select onchange="setFilter('channel',this.value)">${['All','Email','WhatsApp','SFTP'].map(x=>`<option ${F.channel===x?'selected':''}>${x}</option>`).join('')}</select></div>
-     <button class="btn" onclick="state.filters={func:'All',type:'All',status:'All',channel:'All'};render()">Clear filters</button>
+     <button class="btn" onclick="state.filters={func:'All',type:'All',status:'All',channel:'All',q:''};render()">Clear filters</button>
    </div>
+   <div style="font-size:11.5px;color:var(--muted);margin:-6px 0 12px 2px">Showing ${docs.length} of ${state.docs.length} document(s)${q?' matching "'+esc(F.q)+'"':''}</div>
    <div class="card"><table>
     <thead><tr><th>Document</th><th>Function / Type</th><th>From / Party</th><th>Channel · File</th><th>Amount</th><th>AI Conf.</th><th>Status</th></tr></thead>
     <tbody>${docs.map(d=>{const avg=Math.round(d.fields.reduce((s,x)=>s+x.conf,0)/d.fields.length);return `
@@ -1313,8 +1358,21 @@ function sapStage(d){
   if(d.status==='routing')return 8;
   return 6;
 }
+function setSapSearch(val){
+  const activeEl=document.activeElement;
+  const activeId=activeEl&&activeEl.id;
+  const selStart=activeEl&&typeof activeEl.selectionStart==='number'?activeEl.selectionStart:null;
+  state.sapSearch=val;
+  render();
+  if(activeId){
+    const el=document.getElementById(activeId);
+    if(el&&el.focus){el.focus();if(selStart!==null&&el.setSelectionRange){try{el.setSelectionRange(selStart,selStart)}catch(e){}}}
+  }
+}
 function renderSapAp(){
-  const invs=state.docs.filter(d=>d.procId==='P-FIN-01');
+  const invs0=state.docs.filter(d=>d.procId==='P-FIN-01');
+  const sq=(state.sapSearch||'').trim().toLowerCase();
+  const invs=sq?invs0.filter(d=>d.id.toLowerCase().includes(sq)||d.party.toLowerCase().includes(sq)||(d.sapMatch&&d.sapMatch.docType.toLowerCase().includes(sq))||(d.sapMatch&&d.sapMatch.poNo&&String(d.sapMatch.poNo).toLowerCase().includes(sq))||(d.amount||'').toLowerCase().includes(sq)||(d.fields&&d.fields.some(f=>f.value&&String(f.value).toLowerCase().includes(sq)))):invs0;
   const withMatch=invs.filter(d=>d.sapMatch);
   const exCount=withMatch.reduce((s,d)=>s+d.sapMatch.exceptions.length,0);
   const clean=withMatch.filter(d=>d.sapMatch.exceptions.length===0).length;
@@ -1340,6 +1398,11 @@ function renderSapAp(){
    </div>
 
    <div class="section-title">Invoices \u2014 capture through payment</div>
+   <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+     <input id="sapSearchBox" value="${esc(state.sapSearch||'')}" placeholder="Search invoices \u2014 ID, vendor, PO, amount\u2026" style="max-width:340px" oninput="setSapSearch(this.value)">
+     <span style="font-size:11.5px;color:var(--muted)">Showing ${invs.length} of ${invs0.length} invoice(s)${sq?' matching \"'+esc(state.sapSearch)+'\"':''}</span>
+     ${sq?`<button class="btn ghost sm" onclick="setSapSearch('')">Clear</button>`:''}
+   </div>
    <div class="card" style="margin-bottom:16px"><table>
     <thead><tr><th>Invoice</th><th>Type</th><th>Vendor</th><th>PO</th><th>Match basis</th><th>Exceptions</th><th>Stage</th><th>Amount</th><th></th></tr></thead>
     <tbody>${invs.map(d=>{
